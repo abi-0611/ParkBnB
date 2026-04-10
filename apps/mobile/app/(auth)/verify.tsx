@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth';
+import { useTranslation } from 'react-i18next';
 
 const accent = '#10b981';
 
@@ -22,6 +23,7 @@ export default function VerifyScreen() {
   const email = Array.isArray(emailParam) ? (emailParam[0] ?? '') : (emailParam ?? '');
 
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
+  const { t } = useTranslation();
 
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function VerifyScreen() {
     setError(null);
     const parsed = otpVerifySchema.safeParse({ email, otp });
     if (!parsed.success) {
-      setError(parsed.error.errors[0]?.message ?? 'Invalid code');
+      setError(parsed.error.errors[0]?.message ?? t('auth.invalidCode'));
       return;
     }
     setPending(true);
@@ -61,7 +63,7 @@ export default function VerifyScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.card}>
-        <Text style={styles.title}>Enter OTP</Text>
+        <Text style={styles.title}>{t('auth.enterOtp')}</Text>
         <Text style={styles.muted}>Sent to {email}</Text>
 
         <Text style={styles.label}>6-digit code</Text>
@@ -82,11 +84,11 @@ export default function VerifyScreen() {
           onPress={onSubmit}
           disabled={pending}
         >
-          {pending ? <ActivityIndicator color="#0f172a" /> : <Text style={styles.buttonText}>Verify</Text>}
+          {pending ? <ActivityIndicator color="#0f172a" /> : <Text style={styles.buttonText}>{t('auth.verify')}</Text>}
         </Pressable>
 
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>Change email</Text>
+          <Text style={styles.link}>{t('auth.changeEmail')}</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

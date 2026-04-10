@@ -15,6 +15,7 @@ type AuthState = {
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   fetchProfile: () => Promise<void>;
+  updatePreferredLanguage: (lang: 'en' | 'ta') => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -79,5 +80,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
     set({ profile: data as User });
+  },
+
+  updatePreferredLanguage: async (lang) => {
+    const uid = get().user?.id;
+    if (!uid) return;
+    await supabase.from('users').update({ preferred_language: lang }).eq('id', uid);
+    const profile = get().profile;
+    if (profile) {
+      set({ profile: { ...profile, preferred_language: lang } });
+    }
   },
 }));

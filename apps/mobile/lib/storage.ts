@@ -25,3 +25,14 @@ export const onboardingStorage = {
     storage.set(`onboarding:${userId}`, true);
   },
 };
+
+const LANG_KEY = 'language';
+
+export const languageStorage = {
+  get() {
+    return storage.getString(LANG_KEY) ?? null;
+  },
+  set(lang: 'en' | 'ta') {
+    storage.set(LANG_KEY, lang);
+  },
+};

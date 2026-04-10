@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
+
+import { Skeleton } from '@/components/Skeleton';
 
 type Row = {
   booking_id: string;
@@ -17,12 +21,18 @@ type Row = {
 export default function ChatListScreen() {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from('messages')
       .select(
@@ -50,18 +60,39 @@ export default function ChatListScreen() {
       out.push(r);
     }
     setRows(out);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  if (loading) {
+    return (
+      <View style={styles.list}>
+        <Skeleton height={66} radius={14} />
+        <Skeleton height={66} radius={14} />
+        <Skeleton height={66} radius={14} />
+      </View>
+    );
+  }
+
   return (
-    <FlatList
+    <FlashList
       data={rows}
       keyExtractor={(item) => item.booking_id}
       contentContainerStyle={styles.list}
-      ListEmptyComponent={<Text style={styles.empty}>No conversations yet.</Text>}
+      ListEmptyComponent={
+        <View style={styles.emptyWrap}>
+          <Text style={styles.empty}>No messages yet.</Text>
+          <Pressable
+            style={styles.emptyBtn}
+            onPress={() => Toast.show({ type: 'info', text1: 'No conversations yet' })}
+          >
+            <Text style={styles.emptyBtnTx}>Refresh</Text>
+          </Pressable>
+        </View>
+      }
       renderItem={({ item }) => (
         <Pressable style={styles.row} onPress={() => router.push(`/(common)/chat/${item.booking_id}`)}>
           <View>
@@ -79,7 +110,10 @@ export default function ChatListScreen() {
 
 const styles = StyleSheet.create({
   list: { padding: 16, backgroundColor: '#f8fafc', flexGrow: 1 },
+  emptyWrap: { alignItems: 'center', marginTop: 32, gap: 10 },
   empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
+  emptyBtn: { backgroundColor: '#0ea5e9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  emptyBtnTx: { color: '#fff', fontWeight: '700' },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',

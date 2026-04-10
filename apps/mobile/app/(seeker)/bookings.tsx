@@ -1,8 +1,13 @@
 import { supabase } from '@/lib/supabase';
 import { checkOutRpc, fetchSeekerBookings, type BookingSeekerRow } from '@parknear/shared';
+import { FlashList } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
+
+import { Skeleton } from '@/components/Skeleton';
 
 function Tab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -20,7 +25,13 @@ export default function MyBookingsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await fetchSeekerBookings(supabase);
+    const { data, error } = await fetchSeekerBookings(supabase);
+    if (error) {
+      Toast.show({ type: 'error', text1: 'Failed to load bookings', text2: error.message });
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     setRows(data);
     setLoading(false);
   }, []);
@@ -48,7 +59,11 @@ export default function MyBookingsScreen() {
           }
         }}
       >
-        {thumb ? <Image source={{ uri: thumb }} style={styles.thumb} /> : <View style={[styles.thumb, styles.ph]} />}
+        {thumb ? (
+          <Image source={{ uri: thumb }} style={styles.thumb} contentFit="cover" transition={120} />
+        ) : (
+          <View style={[styles.thumb, styles.ph]} />
+        )}
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{item.spots?.title ?? 'Spot'}</Text>
           <Text style={styles.cardMeta}>
@@ -60,6 +75,7 @@ export default function MyBookingsScreen() {
               style={styles.out}
               onPress={async () => {
                 await checkOutRpc(supabase, item.id);
+                Toast.show({ type: 'success', text1: 'Checked out successfully' });
                 void load();
               }}
             >
@@ -95,9 +111,24 @@ export default function MyBookingsScreen() {
         <Tab label="Past" active={tab === 'past'} onPress={() => setTab('past')} />
       </View>
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 24 }} color="#0ea5e9" />
+        <View style={{ marginTop: 18, gap: 10 }}>
+          <Skeleton height={92} radius={14} />
+          <Skeleton height={92} radius={14} />
+          <Skeleton height={92} radius={14} />
+        </View>
       ) : (
-        <FlatList data={filtered} keyExtractor={(i) => i.id} renderItem={renderItem} contentContainerStyle={{ paddingBottom: 40 }} />
+        <FlashList
+          data={filtered}
+          keyExtractor={(i) => i.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          ListEmptyComponent={
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>No bookings in this tab yet.</Text>
+              <Text style={styles.emptyBody}>Start searching and reserve a spot to see it here.</Text>
+            </View>
+          }
+        />
       )}
     </View>
   );
@@ -121,4 +152,7 @@ const styles = StyleSheet.create({
   outTx: { color: '#fff', fontWeight: '800', fontSize: 13 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 },
   actionLink: { color: '#0ea5e9', fontWeight: '700', fontSize: 13 },
+  emptyBox: { marginTop: 24, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+  emptyTitle: { fontWeight: '800', color: '#0f172a' },
+  emptyBody: { marginTop: 4, color: '#64748b' },
 });

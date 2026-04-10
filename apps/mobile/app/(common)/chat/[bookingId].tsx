@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatBookingScreen() {
@@ -28,6 +29,7 @@ export default function ChatBookingScreen() {
   const [otherId, setOtherId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [uid, setUid] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const messages = useChatStore((s) => (bookingId ? s.messagesByBooking[bookingId] ?? [] : []));
   const fetchMessages = useChatStore((s) => s.fetchMessages);
@@ -88,11 +90,16 @@ export default function ChatBookingScreen() {
 
   const onSend = async () => {
     if (!bookingId || !otherId || !input.trim()) return;
+    setSending(true);
     const { error } = await sendMessage(bookingId, otherId, input);
     if (!error) {
       setInput('');
       void fetchMessages(bookingId);
+      Toast.show({ type: 'success', text1: 'Message sent' });
+    } else {
+      Toast.show({ type: 'error', text1: 'Failed to send message', text2: error.message });
     }
+    setSending(false);
   };
 
   return (
@@ -137,12 +144,12 @@ export default function ChatBookingScreen() {
       <View style={[styles.inputRow, { paddingBottom: Math.max(12, insets.bottom) }]}>
         <TextInput
           style={styles.input}
-          placeholder="Type a message…"
+          placeholder="Type a message..."
           value={input}
           onChangeText={setInput}
         />
-        <Pressable style={styles.send} onPress={() => void onSend()}>
-          <Text style={styles.sendTx}>Send</Text>
+        <Pressable style={styles.send} onPress={() => void onSend()} disabled={sending}>
+          <Text style={styles.sendTx}>{sending ? '...' : 'Send'}</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import type { Spot } from '@parknear/shared';
 
 import { OwnerSpotList } from '@/components/owner/OwnerSpotList';
 import { SignOutButton } from '@/components/SignOutButton';
@@ -15,7 +16,11 @@ export default async function OwnerDashboardPage() {
   const { data: profile } = await supabase.from('users').select('full_name, email, role').eq('id', user.id).single();
   const isAdmin = profile?.role === 'admin';
 
-  const { data: spots } = await supabase.from('spots').select('*').eq('owner_id', user.id).order('created_at', { ascending: false });
+  const { data: spots } = await supabase
+    .from('spots')
+    .select('id, title, photos, is_active, avg_rating, total_reviews, spot_type, coverage, price_per_hour, created_at')
+    .eq('owner_id', user.id)
+    .order('created_at', { ascending: false });
 
   const spotIds = (spots ?? []).map((s) => s.id);
   const monthStart = new Date();
@@ -90,7 +95,7 @@ export default async function OwnerDashboardPage() {
       </div>
 
       <h2 className="mt-10 text-lg font-semibold text-slate-200">Your spots</h2>
-      <OwnerSpotList spots={spots ?? []} />
+      <OwnerSpotList spots={(spots ?? []) as unknown as Spot[]} />
     </main>
   );
 }

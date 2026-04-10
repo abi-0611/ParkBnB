@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { onboardingStorage } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +21,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const fetchProfile = useAuthStore((s) => s.fetchProfile);
+  const { t } = useTranslation();
 
   const [selected, setSelected] = useState<UserRole>('seeker');
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>How will you use ParkNear?</Text>
-      <Text style={styles.sub}>Pick a role — you can change this later.</Text>
+      <Text style={styles.sub}>Pick a role - you can change this later.</Text>
 
       <View style={styles.list}>
         {roles.map((r) => {
@@ -71,7 +73,7 @@ export default function OnboardingScreen() {
         onPress={onContinue}
         disabled={pending}
       >
-        <Text style={styles.buttonText}>{pending ? 'Saving…' : 'Continue'}</Text>
+        <Text style={styles.buttonText}>{pending ? t('common.loading') : 'Continue'}</Text>
       </Pressable>
     </View>
   );

@@ -24,7 +24,11 @@ export function SpotRowActions({
         type="button"
         disabled={pending}
         className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-50"
-        onClick={() => startTransition(() => adminSetSpotActive(spotId, !isActive).then(() => router.refresh()))}
+        onClick={() =>
+          startTransition(() => {
+            void adminSetSpotActive(spotId, !isActive).then(() => router.refresh());
+          })
+        }
       >
         {isActive ? 'Deactivate' : 'Activate'}
       </button>
@@ -32,7 +36,11 @@ export function SpotRowActions({
         type="button"
         disabled={pending}
         className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-900 hover:bg-amber-50"
-        onClick={() => startTransition(() => adminSetSpotFeatured(spotId, !isFeatured).then(() => router.refresh()))}
+        onClick={() =>
+          startTransition(() => {
+            void adminSetSpotFeatured(spotId, !isFeatured).then(() => router.refresh());
+          })
+        }
       >
         {isFeatured ? 'Unfeature' : 'Feature'}
       </button>
@@ -45,7 +53,9 @@ export function SpotRowActions({
         className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-800 hover:bg-rose-50"
         onClick={() => {
           if (!window.confirm('Delete this spot? Active bookings may be affected.')) return;
-          startTransition(() => adminDeleteSpot(spotId).then(() => router.refresh()));
+          startTransition(() => {
+            void adminDeleteSpot(spotId).then(() => router.refresh());
+          });
         }}
       >
         Delete

@@ -1,6 +1,8 @@
 import type { SearchSpotsResult } from '@parknear/shared';
 import { useRouter } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { memo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function formatInr(n: string | number | null | undefined) {
   if (n == null) return null;
@@ -19,7 +21,7 @@ type MiniProps = {
   onPress?: () => void;
 };
 
-export function SpotCardMini({ spot, onPress }: MiniProps) {
+function SpotCardMiniBase({ spot, onPress }: MiniProps) {
   const router = useRouter();
   const photo = spot.photos[0];
   const price = formatInr(spot.price_per_hour);
@@ -33,7 +35,7 @@ export function SpotCardMini({ spot, onPress }: MiniProps) {
       }}
     >
       {photo ? (
-        <Image source={{ uri: photo }} style={styles.miniThumb} />
+        <Image source={{ uri: photo }} style={styles.miniThumb} contentFit="cover" transition={120} />
       ) : (
         <View style={[styles.miniThumb, styles.miniPlaceholder]} />
       )}
@@ -54,7 +56,7 @@ type FullProps = {
   spot: SearchSpotsResult;
 };
 
-export function SpotCardFull({ spot }: FullProps) {
+function SpotCardFullBase({ spot }: FullProps) {
   const router = useRouter();
   const hero = spot.photos[0];
   const rating = typeof spot.avg_rating === 'number' ? spot.avg_rating : Number(spot.avg_rating);
@@ -62,7 +64,7 @@ export function SpotCardFull({ spot }: FullProps) {
   return (
     <Pressable style={styles.fullWrap} onPress={() => router.push(`/(seeker)/spot/${spot.id}`)}>
       {hero ? (
-        <Image source={{ uri: hero }} style={styles.hero} />
+        <Image source={{ uri: hero }} style={styles.hero} contentFit="cover" transition={120} />
       ) : (
         <View style={[styles.hero, styles.placeholder]} />
       )}
@@ -94,6 +96,9 @@ export function SpotCardFull({ spot }: FullProps) {
     </Pressable>
   );
 }
+
+export const SpotCardMini = memo(SpotCardMiniBase);
+export const SpotCardFull = memo(SpotCardFullBase);
 
 const styles = StyleSheet.create({
   miniWrap: {

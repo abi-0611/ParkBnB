@@ -1,0 +1,36 @@
+﻿{
+  "common": {
+    "save": "சேமி",
+    "cancel": "ரத்து செய்",
+    "loading": "லோட் ஆகிறது...",
+    "back": "பின்"
+  },
+  "auth": {
+    "tagline": "உங்கள் பார்க்கிங் இடம், ஒரு டாப் தூரத்தில்.",
+    "fullName": "முழு பெயர்",
+    "email": "மின்னஞ்சல்",
+    "sendOtp": "OTP அனுப்பு",
+    "enterOtp": "OTP உள்ளிடவும்",
+    "verify": "சரிபார்",
+    "changeEmail": "மின்னஞ்சலை மாற்று",
+    "invalidCode": "தவறான குறியீடு"
+  },
+  "home": {
+    "bookings": "புக்கிங்ஸ்",
+    "chat": "சாட்",
+    "kyc": "KYC",
+    "sos": "SOS",
+    "owner": "உரிமையாளர்",
+    "settings": "அமைப்புகள்",
+    "signOut": "வெளியேறு",
+    "nearbySpots": "அருகில் {{count}} இடம்",
+    "nearbySpots_other": "அருகில் {{count}} இடங்கள்"
+  },
+  "settings": {
+    "title": "அமைப்புகள்",
+    "language": "மொழி",
+    "english": "English",
+    "tamil": "தமிழ்",
+    "saved": "மொழி புதுப்பிக்கப்பட்டது"
+  }
+}

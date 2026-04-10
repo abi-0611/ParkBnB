@@ -8,8 +8,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 
+import { AppErrorBoundary } from '@/components/ErrorBoundary';
+import { NetworkStatus } from '@/components/NetworkStatus';
 import { useColorScheme } from '@/components/useColorScheme';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import '@/i18n/config';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth';
 
@@ -72,20 +77,26 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  usePushNotifications();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(seeker)" />
-            <Stack.Screen name="(owner)" />
-            <Stack.Screen name="(common)" />
-          </Stack>
-        </ThemeProvider>
-      </BottomSheetModalProvider>
+      <AppErrorBoundary>
+        <BottomSheetModalProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <NetworkStatus />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(seeker)" />
+              <Stack.Screen name="(owner)" />
+              <Stack.Screen name="(common)" />
+            </Stack>
+            <Toast />
+          </ThemeProvider>
+        </BottomSheetModalProvider>
+      </AppErrorBoundary>
     </GestureHandlerRootView>
   );
 }
+

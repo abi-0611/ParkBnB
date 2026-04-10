@@ -43,7 +43,9 @@ export function BookingRowActions({ bookingId, currentStatus }: { bookingId: str
           className="rounded bg-slate-800 px-2 py-1 text-xs text-white disabled:opacity-40"
           onClick={() => {
             if (!window.confirm(`Set status to ${status}?`)) return;
-            startTransition(() => adminOverrideBookingStatus(bookingId, status).then(() => router.refresh()));
+            startTransition(() => {
+              void adminOverrideBookingStatus(bookingId, status).then(() => router.refresh());
+            });
           }}
         >
           Save status
@@ -59,9 +61,12 @@ export function BookingRowActions({ bookingId, currentStatus }: { bookingId: str
           const refundStr = window.prompt('Refund amount (number, or empty for none)', '0');
           if (refundStr === null) return;
           const refundAmount = refundStr === '' ? null : parseFloat(refundStr);
-          startTransition(() =>
-            adminForceCancelBooking(bookingId, { reason, refundAmount: refundAmount ?? null }).then(() => router.refresh())
-          );
+          startTransition(() => {
+            void adminForceCancelBooking(bookingId, {
+              reason,
+              refundAmount: refundAmount ?? null,
+            }).then(() => router.refresh());
+          });
         }}
       >
         Force cancel + refund

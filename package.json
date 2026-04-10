@@ -6,7 +6,11 @@
     "dev:mobile": "pnpm --filter mobile start",
     "dev:web": "pnpm --filter web dev",
     "typecheck": "pnpm -r run typecheck",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "deploy:web:build": "pnpm --filter web build",
+    "deploy:mobile:android:preview": "pnpm --filter mobile exec eas build --platform android --profile preview",
+    "supabase:db:push": "supabase db push",
+    "supabase:functions:deploy": "supabase functions deploy create-razorpay-order verify-payment cancel-booking detect-no-show send-notification"
   },
   "engines": {
     "node": ">=18"

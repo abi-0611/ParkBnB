@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Circle, Marker, Region } from 'react-native-maps';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BottomSheet, { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -23,6 +24,7 @@ const RATIONALE_KEY = 'location_rationale_seen_v1';
 
 export default function SeekerHomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const insets = useSafeAreaInsets();
@@ -116,7 +118,7 @@ export default function SeekerHomeScreen() {
         <Text style={styles.sheetTitle}>Account suspended</Text>
         <Text style={{ marginTop: 8, color: '#64748b' }}>Contact support if this is a mistake.</Text>
         <Pressable style={{ marginTop: 24 }} onPress={() => void signOut()}>
-          <Text style={styles.link}>Sign out</Text>
+          <Text style={styles.link}>{t('home.signOut')}</Text>
         </Pressable>
       </View>
     );
@@ -207,26 +209,29 @@ export default function SeekerHomeScreen() {
       <BottomSheet index={1} snapPoints={snapPoints} enablePanDownToClose={false}>
         <View style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>
-            {spots.length} spot{spots.length === 1 ? '' : 's'} nearby
+            {t('home.nearbySpots', { count: spots.length })}
           </Text>
           <View style={styles.sheetActions}>
             <Pressable onPress={() => router.push('/(seeker)/bookings')}>
-              <Text style={styles.link}>Bookings</Text>
+              <Text style={styles.link}>{t('home.bookings')}</Text>
             </Pressable>
             <Pressable onPress={() => router.push('/(common)/chat')}>
-              <Text style={styles.link}>Chat</Text>
+              <Text style={styles.link}>{t('home.chat')}</Text>
             </Pressable>
             <Pressable onPress={() => router.push('/(common)/profile/kyc')}>
-              <Text style={styles.link}>KYC</Text>
+              <Text style={styles.link}>{t('home.kyc')}</Text>
             </Pressable>
             <Pressable onPress={() => router.push('/(common)/profile/emergency-contacts')}>
-              <Text style={styles.link}>SOS</Text>
+              <Text style={styles.link}>{t('home.sos')}</Text>
             </Pressable>
             <Pressable onPress={() => router.push('/(owner)/dashboard')}>
-              <Text style={styles.link}>Owner</Text>
+              <Text style={styles.link}>{t('home.owner')}</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(common)/settings')}>
+              <Text style={styles.link}>{t('home.settings')}</Text>
             </Pressable>
             <Pressable onPress={() => void signOut()}>
-              <Text style={styles.linkMuted}>Sign out</Text>
+              <Text style={styles.linkMuted}>{t('home.signOut')}</Text>
             </Pressable>
           </View>
         </View>

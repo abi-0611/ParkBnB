@@ -37,7 +37,7 @@ export function UserRowActions({
           }
           setRole(next);
           startTransition(() => {
-            adminUpdateUserRole(userId, next).then(() => router.refresh());
+            void adminUpdateUserRole(userId, next).then(() => router.refresh());
           });
         }}
         className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900"
@@ -53,7 +53,9 @@ export function UserRowActions({
         className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 hover:bg-amber-200"
         onClick={() => {
           if (!window.confirm('Reset strikes to 0?')) return;
-          startTransition(() => adminResetStrikes(userId).then(() => router.refresh()));
+          startTransition(() => {
+            void adminResetStrikes(userId).then(() => router.refresh());
+          });
         }}
       >
         Reset strikes
@@ -67,9 +69,9 @@ export function UserRowActions({
         onClick={() => {
           const reason = window.prompt(isBanned ? 'Unban note (optional)' : 'Ban reason');
           if (reason === null) return;
-          startTransition(() =>
-            adminSetBanned(userId, !isBanned, reason || null).then(() => router.refresh())
-          );
+          startTransition(() => {
+            void adminSetBanned(userId, !isBanned, reason || null).then(() => router.refresh());
+          });
         }}
       >
         {isBanned ? 'Unban' : 'Ban'}
@@ -87,7 +89,9 @@ export function UserRowActions({
             setConfirmDel(false);
             return;
           }
-          startTransition(() => adminDeleteUser(userId).then(() => router.refresh()));
+          startTransition(() => {
+            void adminDeleteUser(userId).then(() => router.refresh());
+          });
         }}
       >
         {confirmDel ? 'Confirm delete' : 'Delete'}

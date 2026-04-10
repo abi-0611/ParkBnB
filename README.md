@@ -27,6 +27,15 @@ Monorepo for **ParkNear** — a Chennai peer-to-peer parking marketplace (React 
 - `pnpm dev:web` — Next.js dev server
 - `pnpm dev:mobile` — Expo dev server
 - `pnpm typecheck` — TypeScript across packages
+- `pnpm deploy:web:build` — verify production web build
+- `pnpm deploy:mobile:android:preview` — create Android preview APK via EAS
+- `pnpm supabase:db:push` — apply migrations to linked Supabase project
+- `pnpm supabase:functions:deploy` — deploy all edge functions
+
+## Deployment
+
+- Mobile EAS config: `apps/mobile/eas.json`
+- Full runbook: `docs/DEPLOYMENT.md`
 
 ## Brand
 

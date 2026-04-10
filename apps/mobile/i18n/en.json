@@ -1,0 +1,36 @@
+﻿{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "back": "Back"
+  },
+  "auth": {
+    "tagline": "Your parking spot, a tap away.",
+    "fullName": "Full name",
+    "email": "Email",
+    "sendOtp": "Send OTP",
+    "enterOtp": "Enter OTP",
+    "verify": "Verify",
+    "changeEmail": "Change email",
+    "invalidCode": "Invalid code"
+  },
+  "home": {
+    "bookings": "Bookings",
+    "chat": "Chat",
+    "kyc": "KYC",
+    "sos": "SOS",
+    "owner": "Owner",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "nearbySpots": "{{count}} spot nearby",
+    "nearbySpots_other": "{{count}} spots nearby"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "english": "English",
+    "tamil": "தமிழ்",
+    "saved": "Language updated"
+  }
+}

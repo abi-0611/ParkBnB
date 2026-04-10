@@ -28,14 +28,14 @@ export function DisputeResolveForm({
         e.preventDefault();
         const strikeUserId = strikeTarget === 'raiser' ? raiserId : strikeTarget === 'other' ? otherId : null;
 
-        startTransition(() =>
-          adminResolveDispute(disputeId, {
+        startTransition(() => {
+          void adminResolveDispute(disputeId, {
             status,
             adminNotes: notes,
             resolution,
             strikeUserId,
-          }).then(() => router.refresh())
-        );
+          }).then(() => router.refresh());
+        });
       }}
     >
       <h2 className="text-sm font-semibold text-slate-900">Resolution</h2>

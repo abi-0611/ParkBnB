@@ -17,7 +17,9 @@ export function KycActions({ userId }: { userId: string }) {
         className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
         onClick={() => {
           if (!window.confirm('Approve KYC for this user?')) return;
-          startTransition(() => adminSetKyc(userId, 'verified').then(() => router.refresh()));
+          startTransition(() => {
+            void adminSetKyc(userId, 'verified').then(() => router.refresh());
+          });
         }}
       >
         Approve
@@ -29,7 +31,9 @@ export function KycActions({ userId }: { userId: string }) {
         onClick={() => {
           const reason = window.prompt('Rejection reason (shown internally)');
           if (reason === null) return;
-          startTransition(() => adminSetKyc(userId, 'rejected', reason).then(() => router.refresh()));
+          startTransition(() => {
+            void adminSetKyc(userId, 'rejected', reason).then(() => router.refresh());
+          });
         }}
       >
         Reject

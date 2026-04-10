@@ -54,6 +54,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       content: content.trim(),
       is_read: false,
     });
+    if (!error) {
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId: receiverId,
+          title: 'New message',
+          body: content.trim().slice(0, 80),
+          data: { screen: 'chat', bookingId },
+          preferenceKey: 'new_chat_message',
+        },
+      });
+    }
     return { error: error ? new Error(error.message) : null };
   },
 

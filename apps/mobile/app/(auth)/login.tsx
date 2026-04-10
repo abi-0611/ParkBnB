@@ -13,12 +13,15 @@ import {
 } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth';
+import { useTranslation } from 'react-i18next';
+import Toast from 'react-native-toast-message';
 
 const primary = '#0ea5e9';
 
 export default function LoginScreen() {
   const router = useRouter();
   const signInWithOtp = useAuthStore((s) => s.signInWithOtp);
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -29,7 +32,7 @@ export default function LoginScreen() {
     setError(null);
     const parsed = signUpSchema.safeParse({ email, full_name: fullName.trim() || 'ParkSeeker' });
     if (!parsed.success) {
-      setError(parsed.error.errors[0]?.message ?? 'Check your details');
+      setError(parsed.error.errors[0]?.message ?? 'Invalid details');
       return;
     }
     const emailOk = loginSchema.safeParse({ email: parsed.data.email });
@@ -42,8 +45,10 @@ export default function LoginScreen() {
     setPending(false);
     if (err) {
       setError(err.message);
+      Toast.show({ type: 'error', text1: 'Sign in failed', text2: err.message });
       return;
     }
+    Toast.show({ type: 'success', text1: 'OTP sent', text2: parsed.data.email });
     router.push({ pathname: '/(auth)/verify', params: { email: parsed.data.email } });
   }
 
@@ -54,19 +59,19 @@ export default function LoginScreen() {
     >
       <View style={styles.card}>
         <Text style={styles.brand}>ParkNear</Text>
-        <Text style={styles.tagline}>Your parking spot, a tap away.</Text>
+        <Text style={styles.tagline}>{t('auth.tagline')}</Text>
 
-        <Text style={styles.label}>Full name</Text>
+        <Text style={styles.label}>{t('auth.fullName')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Your name"
+          placeholder={t('auth.fullName')}
           placeholderTextColor="#64748b"
           value={fullName}
           onChangeText={setFullName}
           autoCapitalize="words"
         />
 
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t('auth.email')}</Text>
         <TextInput
           style={styles.input}
           placeholder="you@example.com"
@@ -84,7 +89,7 @@ export default function LoginScreen() {
           onPress={onSubmit}
           disabled={pending}
         >
-          {pending ? <ActivityIndicator color="#0f172a" /> : <Text style={styles.buttonText}>Send OTP</Text>}
+          {pending ? <ActivityIndicator color="#0f172a" /> : <Text style={styles.buttonText}>{t('auth.sendOtp')}</Text>}
         </Pressable>
       </View>
     </KeyboardAvoidingView>

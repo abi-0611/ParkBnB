@@ -45,6 +45,8 @@ export interface User {
   strike_count: number;
   is_banned: boolean;
   preferred_language: string;
+  push_token?: string | null;
+  notification_preferences?: Record<string, boolean> | unknown;
   created_at: string;
   updated_at: string;
 }

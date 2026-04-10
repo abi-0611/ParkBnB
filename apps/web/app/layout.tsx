@@ -1,4 +1,5 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import localFont from 'next/font/local';
 
 import { AuthProvider } from '@/components/AuthProvider';
@@ -21,13 +22,15 @@ export const metadata: Metadata = {
   description: 'Peer-to-peer parking in Chennai. Book verified spots near you.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = (await cookies()).get('locale')?.value === 'ta' ? 'ta' : 'en';
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
