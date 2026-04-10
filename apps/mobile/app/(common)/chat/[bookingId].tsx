@@ -84,8 +84,15 @@ export default function ChatBookingScreen() {
     subscribe(bookingId, () => {
       listRef.current?.scrollToEnd({ animated: true });
     });
+    // Free-tier safe fallback: poll messages even if realtime replication is unavailable.
+    const poll = setInterval(() => {
+      void fetchMessages(bookingId);
+    }, 3000);
     void markRead(bookingId);
-    return () => unsubscribe(bookingId);
+    return () => {
+      clearInterval(poll);
+      unsubscribe(bookingId);
+    };
   }, [bookingId, fetchMessages, subscribe, unsubscribe, markRead]);
 
   const onSend = async () => {

@@ -65,6 +65,11 @@ export default function ChatListScreen() {
 
   useEffect(() => {
     void load();
+    // Free-tier safe fallback: keep chat list fresh without realtime replication.
+    const poll = setInterval(() => {
+      void load();
+    }, 5000);
+    return () => clearInterval(poll);
   }, [load]);
 
   if (loading) {
