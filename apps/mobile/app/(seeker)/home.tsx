@@ -1,4 +1,5 @@
 import { SpotCardFull, SpotCardMini } from '@/components/SpotCard';
+import { StrikeWarning } from '@/components/StrikeWarning';
 import { LocationBanner } from '@/components/LocationBanner';
 import { LocationRationaleModal } from '@/components/LocationRationaleModal';
 import { SearchBar } from '@/components/SearchBar';
@@ -22,6 +23,7 @@ const RATIONALE_KEY = 'location_rationale_seen_v1';
 
 export default function SeekerHomeScreen() {
   const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
@@ -108,9 +110,23 @@ export default function SeekerHomeScreen() {
 
   const selected = spots.find((s) => s.id === selectedSpotId) ?? null;
 
+  if (profile?.is_banned) {
+    return (
+      <View style={[styles.root, { justifyContent: 'center', padding: 24 }]}>
+        <Text style={styles.sheetTitle}>Account suspended</Text>
+        <Text style={{ marginTop: 8, color: '#64748b' }}>Contact support if this is a mistake.</Text>
+        <Pressable style={{ marginTop: 24 }} onPress={() => void signOut()}>
+          <Text style={styles.link}>Sign out</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <LocationRationaleModal visible={rationaleVisible} onAllow={onRationaleAllow} onNotNow={onRationaleNotNow} />
+
+      {profile && profile.strike_count > 0 ? <StrikeWarning strikeCount={profile.strike_count} /> : null}
 
       {usingFallback && !bannerDismissed ? (
         <LocationBanner
@@ -194,6 +210,18 @@ export default function SeekerHomeScreen() {
             {spots.length} spot{spots.length === 1 ? '' : 's'} nearby
           </Text>
           <View style={styles.sheetActions}>
+            <Pressable onPress={() => router.push('/(seeker)/bookings')}>
+              <Text style={styles.link}>Bookings</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(common)/chat')}>
+              <Text style={styles.link}>Chat</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(common)/profile/kyc')}>
+              <Text style={styles.link}>KYC</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(common)/profile/emergency-contacts')}>
+              <Text style={styles.link}>SOS</Text>
+            </Pressable>
             <Pressable onPress={() => router.push('/(owner)/dashboard')}>
               <Text style={styles.link}>Owner</Text>
             </Pressable>

@@ -22,6 +22,11 @@ export type ReviewType = 'seeker_to_owner' | 'owner_to_seeker';
 export type TransactionType = 'payment' | 'refund' | 'payout' | 'penalty';
 export type TransactionStatus = 'pending' | 'completed' | 'failed';
 
+export interface EmergencyContact {
+  name: string;
+  phone: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -33,6 +38,10 @@ export interface User {
   kyc_status: KycStatus;
   aadhaar_doc_url: string | null;
   selfie_url: string | null;
+  property_proof_url?: string | null;
+  seeker_rating?: string | number;
+  owner_rating?: string | number;
+  emergency_contacts?: EmergencyContact[] | unknown;
   strike_count: number;
   is_banned: boolean;
   preferred_language: string;
@@ -154,8 +163,26 @@ export interface Review {
   spot_id: string;
   rating: number;
   comment: string | null;
+  tags?: string[];
   review_type: ReviewType;
   created_at: string;
+}
+
+export type DisputeStatus = 'open' | 'under_review' | 'resolved_for_raiser' | 'resolved_for_other' | 'dismissed';
+
+export interface Dispute {
+  id: string;
+  booking_id: string;
+  raised_by: string;
+  against_user: string;
+  reason: string;
+  description: string;
+  evidence_photos: string[];
+  status: DisputeStatus;
+  admin_notes: string | null;
+  resolution: string | null;
+  created_at: string;
+  resolved_at: string | null;
 }
 
 export interface Message {

@@ -58,13 +58,12 @@ export default async function PublicSpotPage({ params }: PageProps) {
             </li>
           ))}
         </ul>
-        <button
-          type="button"
-          disabled
-          className="mt-10 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-slate-950 opacity-60"
+        <Link
+          href={`/booking/${id}`}
+          className="mt-10 block w-full rounded-xl bg-emerald-500 py-3 text-center font-semibold text-slate-950 hover:bg-emerald-400"
         >
-          Book (next phase)
-        </button>
+          Book now
+        </Link>
       </div>
     </main>
   );

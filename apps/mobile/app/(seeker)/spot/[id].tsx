@@ -1,4 +1,5 @@
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
+import { ReviewCard } from '@/components/ReviewCard';
 import { supabase } from '@/lib/supabase';
 import { getSpotSeekerDetail, type SpotSeekerDetail } from '@parknear/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -85,17 +86,20 @@ export default function SeekerSpotDetailScreen() {
         <Text style={styles.muted}>No reviews yet.</Text>
       ) : (
         spot.reviews.map((r, i) => (
-          <View key={`${r.created_at}-${i}`} style={styles.review}>
-            <Text style={styles.reviewHead}>
-              ★ {r.rating} · {r.reviewer_name}
-            </Text>
-            {r.comment ? <Text style={styles.reviewBody}>{r.comment}</Text> : null}
-          </View>
+          <ReviewCard
+            key={`${r.created_at}-${i}`}
+            reviewerName={r.reviewer_name}
+            avatarUrl={null}
+            rating={r.rating}
+            comment={r.comment}
+            tags={r.tags ?? []}
+            createdAt={r.created_at}
+          />
         ))
       )}
       <AvailabilityCalendar spotId={spot.id} isEditable={false} />
-      <Pressable style={styles.cta} onPress={() => {}}>
-        <Text style={styles.ctaText}>Book (coming next phase)</Text>
+      <Pressable style={styles.cta} onPress={() => router.push(`/(seeker)/booking/${id}`)}>
+        <Text style={styles.ctaText}>Book now</Text>
       </Pressable>
     </ScrollView>
   );
@@ -120,17 +124,6 @@ const styles = StyleSheet.create({
   desc: { paddingHorizontal: 16, marginTop: 16, color: '#334155', lineHeight: 22, fontSize: 15 },
   section: { paddingHorizontal: 16, marginTop: 24, fontWeight: '800', fontSize: 17, color: '#0f172a' },
   muted: { paddingHorizontal: 16, color: '#94a3b8' },
-  review: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  reviewHead: { fontWeight: '700', color: '#0f172a' },
-  reviewBody: { marginTop: 6, color: '#475569' },
   cta: {
     marginHorizontal: 16,
     marginTop: 24,

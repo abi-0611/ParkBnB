@@ -12,6 +12,7 @@ export default function OwnerLayout() {
     >
       <Stack.Screen name="dashboard" options={{ title: 'Your listings' }} />
       <Stack.Screen name="spots" options={{ headerShown: false }} />
+      <Stack.Screen name="booking/review/[bookingId]" options={{ title: 'Review guest' }} />
     </Stack>
   );
 }

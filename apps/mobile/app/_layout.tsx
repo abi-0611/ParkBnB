@@ -82,6 +82,7 @@ function RootLayoutNav() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(seeker)" />
             <Stack.Screen name="(owner)" />
+            <Stack.Screen name="(common)" />
           </Stack>
         </ThemeProvider>
       </BottomSheetModalProvider>

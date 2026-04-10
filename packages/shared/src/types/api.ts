@@ -35,6 +35,7 @@ export interface SeekerSpotReview {
   comment: string | null;
   created_at: string;
   reviewer_name: string;
+  tags?: string[];
 }
 
 export interface SpotSeekerDetail extends SpotPublic {
