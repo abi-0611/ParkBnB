@@ -1,0 +1,14 @@
+{
+  "name": "parknear",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev:web": "pnpm --filter web dev",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
