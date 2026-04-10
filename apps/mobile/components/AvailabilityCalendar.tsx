@@ -23,17 +23,19 @@ export function AvailabilityCalendar({ spotId, isEditable }: Props) {
   const [bookingCount, setBookingCount] = useState(0);
 
   const load = useCallback(async () => {
-    const [{ data: a }, { count }] = await Promise.all([
-      supabase.from('availability').select('*').eq('spot_id', spotId),
-      supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('spot_id', spotId)
-        .in('status', ['confirmed', 'checked_in', 'active', 'completed']),
-    ]);
+    const { data: a } = await supabase.from('availability').select('*').eq('spot_id', spotId);
     setAvail((a as AvRow[]) ?? []);
+    if (!isEditable) {
+      setBookingCount(0);
+      return;
+    }
+    const { count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('spot_id', spotId)
+      .in('status', ['confirmed', 'checked_in', 'active', 'completed']);
     setBookingCount(count ?? 0);
-  }, [spotId]);
+  }, [spotId, isEditable]);
 
   useEffect(() => {
     void load();

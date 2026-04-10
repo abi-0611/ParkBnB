@@ -32,6 +32,12 @@ export default async function Home() {
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
+            href="/search"
+            className="rounded-full bg-emerald-500 px-8 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400"
+          >
+            Find parking
+          </Link>
+          <Link
             href="/login"
             className="rounded-full bg-sky-500 px-8 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/25 transition hover:bg-sky-400"
           >

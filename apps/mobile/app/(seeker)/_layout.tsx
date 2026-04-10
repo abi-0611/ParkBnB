@@ -2,8 +2,9 @@ import { Stack } from 'expo-router';
 
 export default function SeekerLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="home" options={{ title: 'Home', headerShown: true }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="home" />
+      <Stack.Screen name="spot/[id]" options={{ headerShown: true, title: 'Spot' }} />
     </Stack>
   );
 }

@@ -1,89 +1,290 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { supabase } from '@/lib/supabase';
+import { SpotCardFull, SpotCardMini } from '@/components/SpotCard';
+import { LocationBanner } from '@/components/LocationBanner';
+import { LocationRationaleModal } from '@/components/LocationRationaleModal';
+import { SearchBar } from '@/components/SearchBar';
+import { SearchFiltersSheet } from '@/components/SearchFilters';
+import { SortOptions } from '@/components/SortOptions';
+import { useLocation } from '@/hooks/useLocation';
+import { geoMmkv } from '@/lib/storage';
 import { useAuthStore } from '@/stores/auth';
+import { useSearchStore } from '@/stores/search';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import MapView, { Circle, Marker, Region } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import BottomSheet, { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
+
+const RATIONALE_KEY = 'location_rationale_seen_v1';
 
 export default function SeekerHomeScreen() {
   const router = useRouter();
-  const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
-  const [spotCount, setSpotCount] = useState<number | null>(null);
+  const insets = useSafeAreaInsets();
+  const mapRef = useRef<MapView>(null);
+  const filterRef = useRef<BottomSheetModal>(null);
 
-  const load = useCallback(async () => {
-    const { count, error } = await supabase.from('spots_public').select('*', { count: 'exact', head: true });
-    if (!error) setSpotCount(count);
-  }, []);
+  const {
+    latitude,
+    longitude,
+    isLoading: locLoading,
+    permissionStatus,
+    requestPermission,
+    refreshLocation,
+    usingFallback,
+  } = useLocation();
+
+  const [areaLabel, setAreaLabel] = useState('Chennai');
+  const [rationaleVisible, setRationaleVisible] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const spots = useSearchStore((s) => s.spots);
+  const isLoading = useSearchStore((s) => s.isLoading);
+  const error = useSearchStore((s) => s.error);
+  const filters = useSearchStore((s) => s.filters);
+  const sortBy = useSearchStore((s) => s.sortBy);
+  const searchRadius = useSearchStore((s) => s.searchRadius);
+  const selectedSpotId = useSearchStore((s) => s.selectedSpotId);
+  const searchNearby = useSearchStore((s) => s.searchNearby);
+  const applyFilters = useSearchStore((s) => s.applyFilters);
+  const setSortBy = useSearchStore((s) => s.setSortBy);
+  const clearFilters = useSearchStore((s) => s.clearFilters);
+  const selectSpot = useSearchStore((s) => s.selectSpot);
+  const setUserLocation = useSearchStore((s) => s.setUserLocation);
+
+  const snapPoints = useMemo(() => ['14%', '48%', '88%'], []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (permissionStatus == null) return;
+    if (permissionStatus === Location.PermissionStatus.UNDETERMINED && !geoMmkv.getBoolean(RATIONALE_KEY)) {
+      setRationaleVisible(true);
+    }
+  }, [permissionStatus]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const places = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const p = places[0];
+        const label = [p?.district, p?.city, p?.region].filter(Boolean).join(', ') || 'Chennai';
+        setAreaLabel(label);
+      } catch {
+        setAreaLabel('Chennai');
+      }
+    })();
+  }, [latitude, longitude]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setUserLocation({ lat: latitude, lng: longitude });
+      void searchNearby(latitude, longitude);
+    }, 900);
+    return () => clearTimeout(t);
+  }, [latitude, longitude, setUserLocation, searchNearby]);
+
+  const region: Region = useMemo(
+    () => ({
+      latitude,
+      longitude,
+      latitudeDelta: 0.06,
+      longitudeDelta: 0.06,
+    }),
+    [latitude, longitude]
+  );
+
+  const onRationaleAllow = useCallback(async () => {
+    geoMmkv.set(RATIONALE_KEY, true);
+    setRationaleVisible(false);
+    await requestPermission();
+  }, [requestPermission]);
+
+  const onRationaleNotNow = useCallback(() => {
+    geoMmkv.set(RATIONALE_KEY, true);
+    setRationaleVisible(false);
+  }, []);
+
+  const selected = spots.find((s) => s.id === selectedSpotId) ?? null;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to ParkNear</Text>
-      <Text style={styles.name}>{profile?.full_name ?? 'Explorer'}</Text>
-      <Text style={styles.muted}>
-        {spotCount !== null ? (
-          <>
-            <Text style={styles.count}>{spotCount}</Text> active spots in Chennai
-          </>
-        ) : (
-          'Loading spots…'
-        )}
-      </Text>
+    <View style={styles.root}>
+      <LocationRationaleModal visible={rationaleVisible} onAllow={onRationaleAllow} onNotNow={onRationaleNotNow} />
 
-      {(profile?.role === 'owner' || profile?.role === 'both') && (
-        <Pressable style={[styles.button, { marginTop: 16 }]} onPress={() => router.push('/(owner)/dashboard')}>
-          <Text style={styles.buttonText}>Owner dashboard</Text>
+      {usingFallback && !bannerDismissed ? (
+        <LocationBanner
+          visible
+          onUseChennai={() => {
+            setBannerDismissed(true);
+          }}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      ) : null}
+
+      <View style={[styles.mapWrap, { paddingTop: insets.top }]}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFillObject}
+          initialRegion={region}
+          showsUserLocation={permissionStatus === Location.PermissionStatus.GRANTED}
+          onPress={() => selectSpot(null)}
+        >
+          {spots.flatMap((s) => {
+            const selectedHere = s.id === selectedSpotId;
+            return [
+              <Circle
+                key={`c-${s.id}`}
+                center={{ latitude: s.fuzzy_lat, longitude: s.fuzzy_lng }}
+                radius={s.fuzzy_radius_meters}
+                fillColor={selectedHere ? 'rgba(14, 165, 233, 0.22)' : 'rgba(16, 185, 129, 0.15)'}
+                strokeColor={selectedHere ? 'rgba(14, 165, 233, 0.55)' : 'rgba(16, 185, 129, 0.4)'}
+              />,
+              <Marker
+                key={`m-${s.id}`}
+                coordinate={{ latitude: s.fuzzy_lat, longitude: s.fuzzy_lng }}
+                onPress={() => selectSpot(s.id)}
+              >
+                <View style={styles.priceBubble}>
+                  <Text style={styles.priceBubbleText}>
+                    {s.price_per_hour != null ? `₹${Math.round(Number(s.price_per_hour))}` : '—'}
+                  </Text>
+                </View>
+              </Marker>,
+            ];
+          })}
+        </MapView>
+
+        <SearchBar areaLabel={areaLabel} onOpenFilters={() => filterRef.current?.present()} />
+
+        <Pressable
+          style={[styles.recenter, { bottom: 120 + insets.bottom }]}
+          onPress={() => {
+            mapRef.current?.animateToRegion(
+              {
+                latitude,
+                longitude,
+                latitudeDelta: 0.04,
+                longitudeDelta: 0.04,
+              },
+              350
+            );
+            void refreshLocation();
+          }}
+        >
+          <Ionicons name="locate" size={22} color="#0f172a" />
         </Pressable>
-      )}
 
-      <Pressable style={styles.button} onPress={() => void signOut()}>
-        <Text style={styles.buttonText}>Sign out</Text>
-      </Pressable>
+        {(locLoading || isLoading) && (
+          <View style={styles.loading}>
+            <ActivityIndicator color="#0ea5e9" />
+          </View>
+        )}
+
+        {error ? (
+          <View style={styles.error}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      <BottomSheet index={1} snapPoints={snapPoints} enablePanDownToClose={false}>
+        <View style={styles.sheetHeader}>
+          <Text style={styles.sheetTitle}>
+            {spots.length} spot{spots.length === 1 ? '' : 's'} nearby
+          </Text>
+          <View style={styles.sheetActions}>
+            <Pressable onPress={() => router.push('/(owner)/dashboard')}>
+              <Text style={styles.link}>Owner</Text>
+            </Pressable>
+            <Pressable onPress={() => void signOut()}>
+              <Text style={styles.linkMuted}>Sign out</Text>
+            </Pressable>
+          </View>
+        </View>
+        <SortOptions value={sortBy} onChange={setSortBy} />
+        <BottomSheetFlatList
+          data={spots}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listPad}
+          ListHeaderComponent={
+            selected ? (
+              <View style={{ marginBottom: 12 }}>
+                <SpotCardMini spot={selected} onPress={() => selectSpot(null)} />
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => <SpotCardFull spot={item} />}
+        />
+      </BottomSheet>
+
+      <SearchFiltersSheet
+        ref={filterRef}
+        filters={filters}
+        searchRadius={searchRadius}
+        onApply={(next, r) => applyFilters(next, r)}
+        onClear={() => {
+          clearFilters();
+          filterRef.current?.dismiss();
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#020617',
-    padding: 24,
-    paddingTop: 48,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#38bdf8',
-  },
-  name: {
-    marginTop: 8,
-    fontSize: 18,
-    color: '#f8fafc',
-  },
-  muted: {
-    marginTop: 12,
-    fontSize: 15,
-    color: '#94a3b8',
-  },
-  count: {
-    fontWeight: '700',
-    color: '#34d399',
-  },
-  button: {
-    marginTop: 32,
-    alignSelf: 'flex-start',
+  root: { flex: 1, backgroundColor: '#f8fafc' },
+  mapWrap: { flex: 1 },
+  priceBubble: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#e2e8f0',
+  },
+  priceBubbleText: { fontWeight: '800', color: '#0ea5e9', fontSize: 12 },
+  recenter: {
+    position: 'absolute',
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  loading: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  error: {
+    position: 'absolute',
+    bottom: 100,
+    left: 16,
+    right: 16,
+    backgroundColor: '#fef2f2',
+    padding: 10,
     borderRadius: 10,
+  },
+  errorText: { color: '#b91c1c', textAlign: 'center' },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 8,
   },
-  buttonText: {
-    color: '#e2e8f0',
-    fontWeight: '600',
-  },
+  sheetTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
+  sheetActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  link: { color: '#0ea5e9', fontWeight: '700' },
+  linkMuted: { color: '#64748b', fontWeight: '600', fontSize: 14 },
+  listPad: { paddingHorizontal: 12, paddingBottom: 32 },
 });

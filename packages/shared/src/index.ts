@@ -1,5 +1,6 @@
 export * from './types/database';
 export * from './types/api';
+export * from './queries/spots';
 export * from './utils/pricing';
 export * from './utils/location';
 export * from './utils/storage';
