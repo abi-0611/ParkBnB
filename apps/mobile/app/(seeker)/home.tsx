@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -5,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth';
 
 export default function SeekerHomeScreen() {
+  const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const [spotCount, setSpotCount] = useState<number | null>(null);
@@ -31,6 +33,12 @@ export default function SeekerHomeScreen() {
           'Loading spots…'
         )}
       </Text>
+
+      {(profile?.role === 'owner' || profile?.role === 'both') && (
+        <Pressable style={[styles.button, { marginTop: 16 }]} onPress={() => router.push('/(owner)/dashboard')}>
+          <Text style={styles.buttonText}>Owner dashboard</Text>
+        </Pressable>
+      )}
 
       <Pressable style={styles.button} onPress={() => void signOut()}>
         <Text style={styles.buttonText}>Sign out</Text>

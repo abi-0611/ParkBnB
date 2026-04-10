@@ -8,6 +8,7 @@ export default function Index() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
 
   if (isLoading) {
     return (
@@ -23,6 +24,10 @@ export default function Index() {
 
   if (!onboardingStorage.getDone(user.id)) {
     return <Redirect href="/(auth)/onboarding" />;
+  }
+
+  if (profile?.role === 'owner' || profile?.role === 'both') {
+    return <Redirect href="/(owner)/dashboard" />;
   }
 
   return <Redirect href="/(seeker)/home" />;

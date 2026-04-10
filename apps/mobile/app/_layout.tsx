@@ -37,7 +37,9 @@ export default function RootLayout() {
         isAuthenticated: !!data.session,
         isLoading: false,
       });
-      if (data.session?.user) await useAuthStore.getState().fetchProfile();
+      if (data.session?.user) {
+        await useAuthStore.getState().fetchProfile();
+      }
     })();
 
     const {
@@ -49,7 +51,11 @@ export default function RootLayout() {
         isAuthenticated: !!session,
         isLoading: false,
       });
-      if (session?.user) void useAuthStore.getState().fetchProfile();
+      if (session?.user) {
+        void (async () => {
+          await useAuthStore.getState().fetchProfile();
+        })();
+      }
       else useAuthStore.setState({ profile: null });
     });
 
@@ -70,6 +76,7 @@ function RootLayoutNav() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(seeker)" />
+        <Stack.Screen name="(owner)" />
       </Stack>
     </ThemeProvider>
   );
