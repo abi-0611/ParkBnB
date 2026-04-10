@@ -2,6 +2,7 @@ export * from './types/database';
 export * from './types/api';
 export * from './queries/spots';
 export * from './queries/bookings';
+export * from './queries/admin';
 export * from './utils/payment';
 export * from './utils/pricing';
 export * from './utils/location';

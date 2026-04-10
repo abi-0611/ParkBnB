@@ -13,6 +13,7 @@ export default async function OwnerDashboardPage() {
   if (!user) redirect('/login');
 
   const { data: profile } = await supabase.from('users').select('full_name, email, role').eq('id', user.id).single();
+  const isAdmin = profile?.role === 'admin';
 
   const { data: spots } = await supabase.from('spots').select('*').eq('owner_id', user.id).order('created_at', { ascending: false });
 
@@ -60,6 +61,14 @@ export default async function OwnerDashboardPage() {
           <p className="text-sm text-slate-500">{user.email}</p>
         </div>
         <div className="flex flex-wrap gap-3">
+          {isAdmin ? (
+            <Link
+              href="/admin"
+              className="rounded-lg border border-amber-500/60 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/20"
+            >
+              Admin
+            </Link>
+          ) : null}
           <Link
             href="/spots/new"
             className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400"

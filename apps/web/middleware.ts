@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/spots', '/booking', '/bookings'];
+const PROTECTED_PREFIXES = ['/dashboard', '/spots', '/booking', '/bookings', '/admin'];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -39,6 +39,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  const isAdminRoute = path === '/admin' || path.startsWith('/admin/');
+  if (isAdminRoute && user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
+    if (profile?.role !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (path.startsWith('/login') && user) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
@@ -56,6 +67,8 @@ export const config = {
     '/booking/:path*',
     '/bookings',
     '/bookings/:path*',
+    '/admin',
+    '/admin/:path*',
     '/login',
   ],
 };

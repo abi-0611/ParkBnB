@@ -253,3 +253,6 @@ BEGIN
 
   RAISE NOTICE 'ParkNear seed: inserted sample spots for owner %', oid;
 END $$;
+
+-- After signup, promote an account to admin (SQL editor):
+-- UPDATE public.users SET role = 'admin' WHERE email = 'your@email.com';
