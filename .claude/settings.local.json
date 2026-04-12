@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter web add framer-motion clsx tailwind-merge class-variance-authority lucide-react)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pkill -f \"shadcn\")",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm deploy:web:build)",
+      "Bash(pnpm --filter web build)"
+    ]
+  }
+}

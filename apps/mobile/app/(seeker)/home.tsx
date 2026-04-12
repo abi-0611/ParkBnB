@@ -1,4 +1,5 @@
-import { SpotCardFull, SpotCardMini } from '@/components/SpotCard';
+import { SpotCardFull, SpotCardMini, PriceBubble } from '@/components/SpotCard';
+import { Colors, DARK_MAP_STYLE, Radii, Shadows, Typography } from '@/constants/Theme';
 import { StrikeWarning } from '@/components/StrikeWarning';
 import { LocationBanner } from '@/components/LocationBanner';
 import { LocationRationaleModal } from '@/components/LocationRationaleModal';
@@ -147,6 +148,7 @@ export default function SeekerHomeScreen() {
           initialRegion={region}
           showsUserLocation={permissionStatus === Location.PermissionStatus.GRANTED}
           onPress={() => selectSpot(null)}
+          customMapStyle={DARK_MAP_STYLE}
         >
           {spots.flatMap((s) => {
             const selectedHere = s.id === selectedSpotId;
@@ -155,19 +157,19 @@ export default function SeekerHomeScreen() {
                 key={`c-${s.id}`}
                 center={{ latitude: s.fuzzy_lat, longitude: s.fuzzy_lng }}
                 radius={s.fuzzy_radius_meters}
-                fillColor={selectedHere ? 'rgba(14, 165, 233, 0.22)' : 'rgba(16, 185, 129, 0.15)'}
-                strokeColor={selectedHere ? 'rgba(14, 165, 233, 0.55)' : 'rgba(16, 185, 129, 0.4)'}
+                fillColor={selectedHere ? Colors.mapSelectedFill : Colors.mapCircleFill}
+                strokeColor={selectedHere ? Colors.mapSelectedStroke : Colors.mapCircleStroke}
+                strokeWidth={1.5}
               />,
               <Marker
                 key={`m-${s.id}`}
                 coordinate={{ latitude: s.fuzzy_lat, longitude: s.fuzzy_lng }}
                 onPress={() => selectSpot(s.id)}
               >
-                <View style={styles.priceBubble}>
-                  <Text style={styles.priceBubbleText}>
-                    {s.price_per_hour != null ? `₹${Math.round(Number(s.price_per_hour))}` : '—'}
-                  </Text>
-                </View>
+                <PriceBubble
+                  price={s.price_per_hour != null ? `₹${Math.round(Number(s.price_per_hour))}` : null}
+                  selected={selectedHere}
+                />
               </Marker>,
             ];
           })}
@@ -179,23 +181,18 @@ export default function SeekerHomeScreen() {
           style={[styles.recenter, { bottom: 120 + insets.bottom }]}
           onPress={() => {
             mapRef.current?.animateToRegion(
-              {
-                latitude,
-                longitude,
-                latitudeDelta: 0.04,
-                longitudeDelta: 0.04,
-              },
+              { latitude, longitude, latitudeDelta: 0.04, longitudeDelta: 0.04 },
               350
             );
             void refreshLocation();
           }}
         >
-          <Ionicons name="locate" size={22} color="#0f172a" />
+          <Ionicons name="locate" size={22} color={Colors.electricBright} />
         </Pressable>
 
         {(locLoading || isLoading) && (
           <View style={styles.loading}>
-            <ActivityIndicator color="#0ea5e9" />
+            <ActivityIndicator color={Colors.electric} />
           </View>
         )}
 
@@ -206,7 +203,13 @@ export default function SeekerHomeScreen() {
         ) : null}
       </View>
 
-      <BottomSheet index={1} snapPoints={snapPoints} enablePanDownToClose={false}>
+      <BottomSheet
+        index={1}
+        snapPoints={snapPoints}
+        enablePanDownToClose={false}
+        backgroundStyle={{ backgroundColor: Colors.bgSurface, borderTopLeftRadius: Radii['2xl'], borderTopRightRadius: Radii['2xl'] }}
+        handleIndicatorStyle={{ backgroundColor: Colors.borderBright, width: 36 }}
+      >
         <View style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>
             {t('home.nearbySpots', { count: spots.length })}
@@ -266,31 +269,20 @@ export default function SeekerHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f8fafc' },
+  root: { flex: 1, backgroundColor: Colors.bgBase },
   mapWrap: { flex: 1 },
-  priceBubble: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  priceBubbleText: { fontWeight: '800', color: '#0ea5e9', fontSize: 12 },
   recenter: {
     position: 'absolute',
     right: 16,
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f8fafc',
+    borderRadius: Radii.full,
+    backgroundColor: 'rgba(9,9,23,0.90)',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: Colors.borderBright,
+    ...Shadows.md,
   },
   loading: {
     ...StyleSheet.absoluteFillObject,
@@ -303,11 +295,13 @@ const styles = StyleSheet.create({
     bottom: 100,
     left: 16,
     right: 16,
-    backgroundColor: '#fef2f2',
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.25)',
     padding: 10,
-    borderRadius: 10,
+    borderRadius: Radii.lg,
   },
-  errorText: { color: '#b91c1c', textAlign: 'center' },
+  errorText: { color: Colors.danger, textAlign: 'center', ...Typography.sm },
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -315,9 +309,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
+  sheetTitle: { ...Typography.lg, fontWeight: '800', color: Colors.textPrimary },
   sheetActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  link: { color: '#0ea5e9', fontWeight: '700' },
-  linkMuted: { color: '#64748b', fontWeight: '600', fontSize: 14 },
+  link: { ...Typography.sm, color: Colors.electricBright, fontWeight: '700' },
+  linkMuted: { ...Typography.sm, color: Colors.textMuted, fontWeight: '600' },
   listPad: { paddingHorizontal: 12, paddingBottom: 32 },
 });

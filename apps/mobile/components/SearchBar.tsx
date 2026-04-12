@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Colors, Radii, Shadows, Typography, Easing } from '@/constants/Theme';
 
 type Props = {
   areaLabel: string;
@@ -7,16 +9,40 @@ type Props = {
 };
 
 export function SearchBar({ areaLabel, onOpenFilters }: Props) {
+  const filterPressed = useSharedValue(0);
+
+  const filterStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(filterPressed.value ? 0.88 : 1, Easing.bouncy) }],
+  }));
+
   return (
     <View style={styles.wrap}>
       <View style={styles.inner}>
-        <Ionicons name="search" size={18} color="#64748b" />
+        {/* Search icon + label */}
+        <View style={styles.searchIcon}>
+          <Ionicons name="search" size={15} color={Colors.electricBright} />
+        </View>
         <Text style={styles.label} numberOfLines={1}>
           {areaLabel}
         </Text>
-        <Pressable onPress={onOpenFilters} hitSlop={10} accessibilityLabel="Filters">
-          <Ionicons name="options-outline" size={22} color="#0f172a" />
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Filters button */}
+        <Animated.View style={filterStyle}>
+        <Pressable
+          style={styles.filterBtn}
+          onPressIn={() => { filterPressed.value = 1; }}
+          onPressOut={() => { filterPressed.value = 0; }}
+          onPress={onOpenFilters}
+          hitSlop={8}
+          accessibilityLabel="Open filters"
+        >
+          <Ionicons name="options-outline" size={17} color={Colors.textSecondary} />
+          <Text style={styles.filterLabel}>Filters</Text>
         </Pressable>
+        </Animated.View>
       </View>
     </View>
   );
@@ -28,23 +54,53 @@ const styles = StyleSheet.create({
     top: 12,
     left: 12,
     right: 12,
-    zIndex: 2,
+    zIndex: 10,
   },
   inner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#f8fafc',
-    borderRadius: 14,
+    backgroundColor: 'rgba(9, 9, 23, 0.85)',
+    borderRadius: Radii['2xl'],
     paddingHorizontal: 14,
     paddingVertical: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: Colors.border,
+    ...Shadows.card,
   },
-  label: { flex: 1, fontSize: 15, fontWeight: '600', color: '#0f172a' },
+  searchIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: Radii.sm,
+    backgroundColor: `${Colors.electric}18`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    flex: 1,
+    ...Typography.base,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  divider: {
+    width: 1,
+    height: 18,
+    backgroundColor: Colors.border,
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: `${Colors.electric}10`,
+    borderRadius: Radii.lg,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: `${Colors.electric}25`,
+  },
+  filterLabel: {
+    ...Typography.xs,
+    fontWeight: '700',
+    color: Colors.electricBright,
+  },
 });

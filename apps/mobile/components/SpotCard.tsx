@@ -3,167 +3,328 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Radii, Shadows, Typography, Easing } from '@/constants/Theme';
 
-function formatInr(n: string | number | null | undefined) {
+function formatInr(n: string | number | null | undefined): string | null {
   if (n == null) return null;
   const num = typeof n === 'number' ? n : Number(n);
   if (!Number.isFinite(num)) return null;
   return `₹${Math.round(num)}`;
 }
 
-function formatDistance(m: number) {
+function formatDistance(m: number): string {
   if (m < 1000) return `${Math.round(m)} m`;
   return `${(m / 1000).toFixed(1)} km`;
 }
 
-type MiniProps = {
-  spot: SearchSpotsResult;
-  onPress?: () => void;
-};
+// ─── Mini spot card (selected pin preview) ──────────────────
+type MiniProps = { spot: SearchSpotsResult; onPress?: () => void };
 
 function SpotCardMiniBase({ spot, onPress }: MiniProps) {
-  const router = useRouter();
-  const photo = spot.photos[0];
-  const price = formatInr(spot.price_per_hour);
+  const router  = useRouter();
+  const photo   = spot.photos[0];
+  const price   = formatInr(spot.price_per_hour);
+  const pressed = useSharedValue(0);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(pressed.value ? 0.97 : 1, Easing.snappy) }],
+  }));
 
   return (
+    <Animated.View style={animStyle}>
     <Pressable
       style={styles.miniWrap}
+      onPressIn={() => { pressed.value = 1; }}
+      onPressOut={() => { pressed.value = 0; }}
       onPress={() => {
         onPress?.();
         router.push(`/(seeker)/spot/${spot.id}`);
       }}
     >
       {photo ? (
-        <Image source={{ uri: photo }} style={styles.miniThumb} contentFit="cover" transition={120} />
+        <Image source={{ uri: photo }} style={styles.miniThumb} contentFit="cover" transition={200} />
       ) : (
-        <View style={[styles.miniThumb, styles.miniPlaceholder]} />
+        <View style={[styles.miniThumb, styles.miniPlaceholder]}>
+          <Ionicons name="car-outline" size={24} color={Colors.textDisabled} />
+        </View>
       )}
       <View style={styles.miniBody}>
-        <Text style={styles.miniTitle} numberOfLines={1}>
-          {spot.title}
-        </Text>
-        <Text style={styles.miniRow}>
-          {price ? `${price}/hr` : '—'} · {formatDistance(spot.distance_meters)} · ★{' '}
-          {typeof spot.avg_rating === 'number' ? spot.avg_rating : Number(spot.avg_rating) || '—'}
-        </Text>
+        <Text style={styles.miniTitle} numberOfLines={1}>{spot.title}</Text>
+        <View style={styles.miniMeta}>
+          {price ? (
+            <View style={styles.pricePill}>
+              <Text style={styles.pricePillText}>{price}/hr</Text>
+            </View>
+          ) : null}
+          <Text style={styles.miniSub}>
+            {formatDistance(spot.distance_meters)}
+          </Text>
+        </View>
       </View>
+      <Ionicons name="chevron-forward" size={16} color={Colors.textDisabled} />
     </Pressable>
+    </Animated.View>
   );
 }
 
-type FullProps = {
-  spot: SearchSpotsResult;
-};
+// ─── Full spot card (list) ──────────────────────────────────
+type FullProps = { spot: SearchSpotsResult };
 
 function SpotCardFullBase({ spot }: FullProps) {
-  const router = useRouter();
-  const hero = spot.photos[0];
-  const rating = typeof spot.avg_rating === 'number' ? spot.avg_rating : Number(spot.avg_rating);
+  const router  = useRouter();
+  const hero    = spot.photos[0];
+  const rating  = typeof spot.avg_rating === 'number' ? spot.avg_rating : Number(spot.avg_rating);
+  const pressed = useSharedValue(0);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(pressed.value ? 0.98 : 1, Easing.snappy) }],
+  }));
+
+  const priceLabel = [
+    formatInr(spot.price_per_hour) ? `${formatInr(spot.price_per_hour)}/hr` : null,
+    formatInr(spot.price_per_day)  ? `${formatInr(spot.price_per_day)}/day` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
-    <Pressable style={styles.fullWrap} onPress={() => router.push(`/(seeker)/spot/${spot.id}`)}>
-      {hero ? (
-        <Image source={{ uri: hero }} style={styles.hero} contentFit="cover" transition={120} />
-      ) : (
-        <View style={[styles.hero, styles.placeholder]} />
-      )}
+    <Animated.View style={animStyle}>
+    <Pressable
+      style={styles.fullWrap}
+      onPressIn={() => { pressed.value = 1; }}
+      onPressOut={() => { pressed.value = 0; }}
+      onPress={() => router.push(`/(seeker)/spot/${spot.id}`)}
+    >
+      {/* Hero image */}
+      <View style={styles.heroWrap}>
+        {hero ? (
+          <Image source={{ uri: hero }} style={styles.hero} contentFit="cover" transition={200} />
+        ) : (
+          <View style={[styles.hero, styles.placeholder]}>
+            <Ionicons name="car-outline" size={36} color={Colors.textDisabled} />
+          </View>
+        )}
+        {/* Price overlay */}
+        {priceLabel ? (
+          <View style={styles.priceOverlay}>
+            <Text style={styles.priceOverlayText}>{priceLabel}</Text>
+          </View>
+        ) : null}
+        {/* Instant book badge */}
+        {spot.is_instant_book ? (
+          <View style={styles.instantBadge}>
+            <Ionicons name="flash" size={10} color="#fff" />
+            <Text style={styles.instantText}>Instant</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Body */}
       <View style={styles.fullBody}>
-        <Text style={styles.fullTitle}>{spot.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.fullTitle} numberOfLines={1}>{spot.title}</Text>
+          {Number.isFinite(rating) ? (
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={10} color={Colors.warning} />
+              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {spot.fuzzy_landmark ? (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={13} color={Colors.textMuted} />
+            <Text style={styles.landmark} numberOfLines={1}>{spot.fuzzy_landmark}</Text>
+            <Text style={styles.distText}>{formatDistance(spot.distance_meters)}</Text>
+          </View>
+        ) : null}
+
+        {/* Type badges */}
         <View style={styles.badgeRow}>
-          <Text style={styles.badge}>{spot.spot_type}</Text>
-          <Text style={styles.badge}>{spot.coverage}</Text>
-          <Text style={styles.badge}>{spot.vehicle_size}</Text>
+          {[spot.spot_type, spot.coverage, spot.vehicle_size].filter(Boolean).map((b) => (
+            <View key={b} style={styles.badge}>
+              <Text style={styles.badgeText}>{b}</Text>
+            </View>
+          ))}
         </View>
-        <Text style={styles.landmark}>
-          ~{formatDistance(spot.distance_meters)} · {spot.fuzzy_landmark || 'Chennai'}
-        </Text>
-        <Text style={styles.priceRow}>
-          {[formatInr(spot.price_per_hour) && `${formatInr(spot.price_per_hour)}/hr`, formatInr(spot.price_per_day) && `${formatInr(spot.price_per_day)}/day`, formatInr(spot.price_per_month) && `${formatInr(spot.price_per_month)}/mo`]
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
-        <View style={styles.metaRow}>
-          <Text style={styles.rating}>
-            ★ {Number.isFinite(rating) ? rating.toFixed(1) : '—'} ({spot.total_reviews})
-          </Text>
-          {spot.is_instant_book ? <Text style={styles.instant}>Instant Book</Text> : null}
-        </View>
-        <Pressable style={styles.bookBtn} onPress={() => router.push(`/(seeker)/spot/${spot.id}`)}>
-          <Text style={styles.bookBtnText}>View details</Text>
+
+        {/* Book button */}
+        <Pressable
+          style={styles.bookBtn}
+          onPress={() => router.push(`/(seeker)/spot/${spot.id}`)}
+        >
+          <Text style={styles.bookBtnText}>View & Book</Text>
+          <Ionicons name="arrow-forward" size={15} color="#fff" />
         </Pressable>
       </View>
     </Pressable>
+    </Animated.View>
   );
 }
 
 export const SpotCardMini = memo(SpotCardMiniBase);
 export const SpotCardFull = memo(SpotCardFullBase);
 
+// ─── Styles ─────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  // Mini
   miniWrap: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: Colors.bgSurface,
+    borderRadius: Radii.xl,
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 10,
+    gap: 12,
+    ...Shadows.card,
   },
-  miniThumb: { width: 80, height: 80, backgroundColor: '#e2e8f0' },
+  miniThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: Radii.lg,
+    backgroundColor: Colors.bgElevated,
+    overflow: 'hidden',
+  },
   miniPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  miniBody: { flex: 1, padding: 10, justifyContent: 'center', gap: 4 },
-  miniTitle: { fontWeight: '700', fontSize: 15, color: '#0f172a' },
-  miniRow: { fontSize: 13, color: '#64748b' },
+  miniBody: { flex: 1, gap: 6 },
+  miniTitle: { ...Typography.base, fontWeight: '700', color: Colors.textPrimary },
+  miniMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  miniSub:  { ...Typography.sm, color: Colors.textMuted },
+  pricePill: {
+    backgroundColor: `${Colors.electric}1F`,
+    borderWidth: 1,
+    borderColor: `${Colors.electric}40`,
+    borderRadius: Radii.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  pricePillText: { ...Typography.xs, fontWeight: '800', color: Colors.electricBright },
+
+  // Full card
   fullWrap: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: Colors.bgSurface,
+    borderRadius: Radii['2xl'],
     overflow: 'hidden',
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.card,
   },
-  hero: { width: '100%', height: 180, backgroundColor: '#e2e8f0' },
-  placeholder: {},
-  fullBody: { padding: 14, gap: 8 },
-  fullTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+  heroWrap: { position: 'relative' },
+  hero: { width: '100%', height: 190, backgroundColor: Colors.bgElevated },
+  placeholder: { alignItems: 'center', justifyContent: 'center' },
+  priceOverlay: {
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    backgroundColor: 'rgba(5,5,14,0.85)',
+    borderRadius: Radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: `${Colors.electric}40`,
+  },
+  priceOverlayText: {
+    ...Typography.sm,
+    fontWeight: '800',
+    color: Colors.electricBright,
+  },
+  instantBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.emerald,
+    borderRadius: Radii.full,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  instantText: { ...Typography.xs, fontWeight: '800', color: '#fff' },
+
+  fullBody: { padding: 14, gap: 10 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  fullTitle: { ...Typography.lg, fontWeight: '800', color: Colors.textPrimary, flex: 1 },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: `${Colors.warning}18`,
+    borderRadius: Radii.full,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  ratingText: { ...Typography.xs, fontWeight: '800', color: Colors.warning },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  landmark: { ...Typography.sm, color: Colors.textMuted, flex: 1 },
+  distText:  { ...Typography.sm, fontWeight: '700', color: Colors.electric },
+
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   badge: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0369a1',
-    backgroundColor: '#e0f2fe',
+    backgroundColor: `${Colors.electric}14`,
+    borderWidth: 1,
+    borderColor: `${Colors.electric}28`,
+    borderRadius: Radii.sm,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    overflow: 'hidden',
-    textTransform: 'capitalize',
+    paddingVertical: 3,
   },
-  landmark: { color: '#64748b', fontSize: 14 },
-  priceRow: { color: '#0ea5e9', fontWeight: '700', fontSize: 15 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rating: { color: '#0f172a', fontWeight: '600' },
-  instant: {
-    backgroundColor: '#d1fae5',
-    color: '#047857',
-    fontWeight: '800',
-    fontSize: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
+  badgeText: { ...Typography.xs, fontWeight: '700', color: Colors.electricBright, textTransform: 'capitalize' },
+
   bookBtn: {
-    marginTop: 4,
-    backgroundColor: '#0ea5e9',
-    paddingVertical: 12,
-    borderRadius: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 4,
+    backgroundColor: Colors.electric,
+    paddingVertical: 13,
+    borderRadius: Radii.lg,
   },
-  bookBtnText: { color: '#f8fafc', fontWeight: '800', fontSize: 15 },
+  bookBtnText: { ...Typography.base, fontWeight: '800', color: '#fff' },
+});
+
+// ─── Price bubble (map marker) ──────────────────────────────
+export function PriceBubble({ price, selected }: { price: string | null; selected: boolean }) {
+  return (
+    <View
+      style={[
+        bubbleStyles.wrap,
+        selected && bubbleStyles.selectedWrap,
+      ]}
+    >
+      <Text style={[bubbleStyles.text, selected && bubbleStyles.selectedText]}>
+        {price ?? '—'}
+      </Text>
+    </View>
+  );
+}
+
+const bubbleStyles = StyleSheet.create({
+  wrap: {
+    backgroundColor: Colors.bgSurface,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radii.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    ...Shadows.sm,
+  },
+  selectedWrap: {
+    backgroundColor: Colors.electric,
+    borderColor: Colors.electricBright,
+    ...Shadows.md,
+  },
+  text: {
+    fontWeight: '800',
+    color: Colors.electricBright,
+    fontSize: 12,
+  },
+  selectedText: { color: '#fff' },
 });
