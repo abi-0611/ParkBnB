@@ -73,12 +73,18 @@ jobs:
             pnpm dlx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           fi
 
+      # Must match deploy: preview build → preview deploy; production build → --prod deploy (see vercel.link/prebuilt-environment-mismatch).
       - name: Build Vercel artifacts
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: pnpm dlx vercel build --token="$VERCEL_TOKEN"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.target }}" = "preview" ]; then
+            pnpm dlx vercel build --token="$VERCEL_TOKEN"
+          else
+            pnpm dlx vercel build --prod --token="$VERCEL_TOKEN"
+          fi
 
       - name: Deploy prebuilt artifacts
         env:
