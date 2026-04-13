@@ -1,9 +1,11 @@
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function NetworkStatus() {
   const [offline, setOffline] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const sub = NetInfo.addEventListener((state) => {
@@ -15,7 +17,7 @@ export function NetworkStatus() {
   if (!offline) return null;
 
   return (
-    <View style={styles.banner}>
+    <View style={[styles.banner, { paddingTop: insets.top + 6 }]}>
       <Text style={styles.text}>You're offline. Some features may be unavailable.</Text>
     </View>
   );
@@ -27,11 +29,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 50,
+    zIndex: 999,
     backgroundColor: '#f97316',
-    paddingVertical: 10,
+    paddingBottom: 10,
     paddingHorizontal: 14,
   },
   text: { color: '#fff', textAlign: 'center', fontWeight: '700' },
 });
-

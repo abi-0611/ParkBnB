@@ -1,26 +1,42 @@
 'use client';
 
-import { generateUploadPath, spotSchema } from '@parknear/shared';
+import { spotSchema } from '@parknear/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
-import { createClient } from '@/lib/supabase/client';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Nominatim reverse-geocode response (OpenStreetMap — free, no key needed)
+type NominatimResult = {
+  display_name: string;
+  address: {
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+    quarter?: string;
+    city_district?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    postcode?: string;
+    state_district?: string;
+  };
+};
 
 type Mode = 'create' | 'edit';
 
 export function SpotForm({ mode, spotId }: { mode: Mode; spotId?: string }) {
   const router = useRouter();
-  const supabase = createClient();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  const { data: session } = useSession();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(mode === 'edit');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   const [latitude, setLatitude] = useState('13.0827');
   const [longitude, setLongitude] = useState('80.2707');
@@ -46,23 +62,75 @@ export function SpotForm({ mode, spotId }: { mode: Mode; spotId?: string }) {
   const [endTime, setEndTime] = useState('20:00');
   const [instantBook, setInstantBook] = useState(true);
 
-  useEffect(() => {
-    void (async () => {
-      const { data } = await supabase.auth.getUser();
-      setUserId(data.user?.id ?? null);
-    })();
-  }, [supabase]);
+  // ── Geolocation ──────────────────────────────────────────────────────────
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError,   setGeoError]   = useState<string | null>(null);
+  const [geoSuccess, setGeoSuccess] = useState(false);
+  const [geoAttemptedOnce, setGeoAttemptedOnce] = useState(false);
+
+  async function detectLocation() {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser.');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError(null);
+    setGeoSuccess(false);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLatitude(lat.toFixed(6));
+        setLongitude(lng.toFixed(6));
+
+        // Reverse geocode with Nominatim (free, no API key)
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
+            { headers: { 'User-Agent': 'ParkNear/1.0' } }
+          );
+          const data = (await res.json()) as NominatimResult;
+          const addr = data.address;
+
+          const streetParts = [addr.road, addr.neighbourhood ?? addr.suburb ?? addr.quarter]
+            .filter(Boolean)
+            .join(', ');
+          setAddressLine(streetParts || data.display_name.split(',').slice(0, 2).join(', ').trim());
+          setLandmark(addr.suburb ?? addr.neighbourhood ?? addr.quarter ?? '');
+          setPincode(addr.postcode ?? '');
+          setFuzzyLandmark(
+            addr.suburb ?? addr.neighbourhood ?? addr.city_district ?? addr.city ?? addr.town ?? ''
+          );
+        } catch {
+          // Coords are already set — reverse geocode failure is non-fatal
+        }
+        setGeoSuccess(true);
+        setGeoLoading(false);
+      },
+      (err) => {
+        const msg =
+          err.code === 1 ? 'Location access denied. Allow it in browser settings and try again.' :
+          err.code === 2 ? 'Position unavailable. Try entering coordinates manually.' :
+                           'Location request timed out. Try again.';
+        setGeoError(msg);
+        setGeoLoading(false);
+      },
+      { timeout: 12000, maximumAge: 60_000, enableHighAccuracy: true }
+    );
+  }
 
   useEffect(() => {
     if (mode !== 'edit' || !spotId) return;
     void (async () => {
-      const { data, error: e } = await supabase.rpc('get_spot_for_owner_edit', { p_id: spotId });
+      const res = await fetch(`/api/owner/spots/${spotId}/edit-data`);
+      const json = (await res.json()) as { spot?: Record<string, unknown>; availability?: Array<{ day_of_week: number; start_time: string; end_time: string }>; error?: string };
       setLoading(false);
-      if (e || !data) {
-        setError(e?.message ?? 'Not found');
+      if (!res.ok || !json.spot) {
+        setError(json.error ?? 'Not found');
         return;
       }
-      const row = (typeof data === 'string' ? JSON.parse(data) : data) as Record<string, unknown>;
+      const row = json.spot;
       setLatitude(String(row.latitude ?? ''));
       setLongitude(String(row.longitude ?? ''));
       setAddressLine(String(row.address_line ?? ''));
@@ -82,41 +150,47 @@ export function SpotForm({ mode, spotId }: { mode: Mode; spotId?: string }) {
       setPriceDay(row.price_per_day != null ? String(row.price_per_day) : '');
       setPriceMonth(row.price_per_month != null ? String(row.price_per_month) : '');
       setInstantBook(Boolean(row.is_instant_book));
+
+      const av = json.availability ?? [];
+      if (av.length > 0) {
+        const allDays = av.map((r) => r.day_of_week).sort((a, b) => a - b);
+        const isFullWeek = allDays.length === 7 && allDays.every((d, i) => d === i);
+        setAvailableAllDay(isFullWeek);
+        if (!isFullWeek) setActiveDays(allDays);
+        const first = av[0];
+        if (first?.start_time) setStartTime(String(first.start_time).slice(0, 5));
+        if (first?.end_time) setEndTime(String(first.end_time).slice(0, 5));
+      }
     })();
-  }, [mode, spotId, supabase]);
+  }, [mode, spotId]);
+
+  // Auto-attempt current location on create flow (Step 1),
+  // so owners usually don't need to type coordinates manually.
+  useEffect(() => {
+    if (mode !== 'create' || step !== 1 || geoAttemptedOnce) return;
+    setGeoAttemptedOnce(true);
+    void detectLocation();
+  }, [mode, step, geoAttemptedOnce]);
 
   async function onFiles(files: FileList | null) {
-    if (!files || !userId) return;
+    if (!files) return;
     const next = [...photos];
     for (const file of Array.from(files)) {
       if (next.length >= 6) break;
-      const path = generateUploadPath(userId, file.name);
-      const { error: up } = await supabase.storage.from('spot-photos').upload(path, file, { upsert: true });
-      if (!up) next.push(path);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/owner/spot-photos/upload', {
+        method: 'POST',
+        body: form,
+      });
+      const json = (await res.json()) as { path?: string; error?: string };
+      if (!res.ok || !json.path) {
+        setError(json.error ?? 'Photo upload failed');
+        continue;
+      }
+      next.push(json.path);
     }
     setPhotos(next);
-  }
-
-  function toTimeSql(hhmm: string) {
-    const [h, m] = hhmm.split(':').map((x) => parseInt(x, 10));
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
-  }
-
-  async function persistAvailability(id: string) {
-    await supabase.from('availability').delete().eq('spot_id', id);
-    const days = availableAllDay ? [0, 1, 2, 3, 4, 5, 6] : activeDays;
-    const start = availableAllDay ? '00:00:00' : toTimeSql(startTime);
-    const end = availableAllDay ? '23:59:59' : toTimeSql(endTime);
-    const rows = days.map((day_of_week) => ({
-      spot_id: id,
-      day_of_week,
-      start_time: start,
-      end_time: end,
-      is_recurring: true,
-      specific_date: null as string | null,
-    }));
-    const { error: ae } = await supabase.from('availability').insert(rows);
-    if (ae) throw ae;
   }
 
   async function onSubmit() {
@@ -166,64 +240,45 @@ export function SpotForm({ mode, spotId }: { mode: Mode; spotId?: string }) {
 
     setSaving(true);
     try {
-      if (mode === 'create') {
-        const { data: newId, error: ce } = await supabase.rpc('create_spot', {
-          p_title: title.trim(),
-          p_description: description.trim(),
-          p_spot_type: spotType,
-          p_coverage: coverage,
-          p_vehicle_size: vehicleSize,
-          p_total_slots: totalSlots,
-          p_longitude: lng,
-          p_latitude: lat,
-          p_address_line: addressLine.trim(),
-          p_landmark: landmark.trim(),
-          p_pincode: pincode.trim(),
-          p_fuzzy_landmark: fuzzyLandmark.trim(),
-          p_fuzzy_radius_meters: 500,
-          p_price_per_hour: Number.isFinite(ph) ? ph : null,
-          p_price_per_day: Number.isFinite(pd) ? pd : null,
-          p_price_per_month: Number.isFinite(pm) ? pm : null,
-          p_is_instant_book: instantBook,
-          p_amenities: amenities,
-          p_photos: photos,
-          p_video_url: videoUrl.trim(),
-        });
-        if (ce) throw ce;
-        const id = newId as string;
-        await persistAvailability(id);
-        router.push('/dashboard');
-        router.refresh();
-      } else if (spotId) {
-        const { error: ue } = await supabase.rpc('update_spot', {
-          p_spot_id: spotId,
-          p_title: title.trim(),
-          p_description: description.trim(),
-          p_spot_type: spotType,
-          p_coverage: coverage,
-          p_vehicle_size: vehicleSize,
-          p_total_slots: totalSlots,
-          p_longitude: lng,
-          p_latitude: lat,
-          p_address_line: addressLine.trim(),
-          p_landmark: landmark.trim(),
-          p_pincode: pincode.trim(),
-          p_fuzzy_landmark: fuzzyLandmark.trim(),
-          p_fuzzy_radius_meters: 500,
-          p_price_per_hour: Number.isFinite(ph) ? ph : null,
-          p_price_per_day: Number.isFinite(pd) ? pd : null,
-          p_price_per_month: Number.isFinite(pm) ? pm : null,
-          p_is_instant_book: instantBook,
-          p_is_active: true,
-          p_amenities: amenities,
-          p_photos: photos,
-          p_video_url: videoUrl.trim(),
-        });
-        if (ue) throw ue;
-        await persistAvailability(spotId);
-        router.push('/dashboard');
-        router.refresh();
-      }
+      const payload = {
+        mode,
+        spotId,
+        latitude: lat,
+        longitude: lng,
+        startTime,
+        endTime,
+        activeDays,
+        availableAllDay,
+        spot: {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          spot_type: spotType,
+          coverage,
+          vehicle_size: vehicleSize,
+          total_slots: totalSlots,
+          address_line: addressLine.trim(),
+          landmark: landmark.trim() || undefined,
+          pincode: pincode.trim() || undefined,
+          fuzzy_landmark: fuzzyLandmark.trim(),
+          fuzzy_radius_meters: 500,
+          price_per_hour: Number.isFinite(ph) ? ph : undefined,
+          price_per_day: Number.isFinite(pd) ? pd : undefined,
+          price_per_month: Number.isFinite(pm) ? pm : undefined,
+          is_instant_book: instantBook,
+          amenities,
+          photos,
+          video_url: videoUrl.trim() || null,
+        },
+      };
+      const res = await fetch('/api/owner/spots/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json()) as { id?: string; error?: string };
+      if (!res.ok) throw new Error(json.error ?? 'Failed to save spot');
+      router.push('/dashboard');
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed');
     } finally {
@@ -255,32 +310,162 @@ export function SpotForm({ mode, spotId }: { mode: Mode; spotId?: string }) {
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
+      {mode === 'create' && session?.user?.kycStatus === 'not_submitted' ? (
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+          KYC proof is required before publishing a listing.
+          <Link href="/kyc" className="ml-2 text-electric-bright hover:underline">
+            Submit KYC now
+          </Link>
+        </div>
+      ) : null}
+
       {step === 1 ? (
-        <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p className="text-sm text-slate-400">Set coordinates (decimal degrees). Default: Chennai.</p>
-          <label className="block text-xs text-slate-500">
-            Latitude
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-          </label>
-          <label className="block text-xs text-slate-500">
-            Longitude
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
-          </label>
+        <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+
+          {/* ── Detect location button ── */}
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={geoLoading}
+              onClick={() => void detectLocation()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-500/40 bg-sky-500/10 px-4 py-3 text-sm font-semibold text-sky-300 transition-all hover:bg-sky-500/20 hover:border-sky-400/60 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {geoLoading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Detecting location…
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                    <path d="M12 9a3 3 0 100 6 3 3 0 000-6z" />
+                  </svg>
+                  Use my current location
+                </>
+              )}
+            </button>
+
+            {geoSuccess && (
+              <p className="flex items-center gap-1.5 text-xs text-emerald-400">
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Location detected — address fields auto-filled. Review and adjust if needed.
+              </p>
+            )}
+            {geoError && (
+              <p className="flex items-center gap-1.5 text-xs text-red-400">
+                <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                {geoError}
+              </p>
+            )}
+          </div>
+
+          {/* ── Divider ── */}
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-700" />
+            <span className="text-xs text-slate-500">or enter manually</span>
+            <div className="h-px flex-1 bg-slate-700" />
+          </div>
+
+          {/* ── Coordinate inputs ── */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs text-slate-500">
+              Latitude
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                placeholder="e.g. 13.082700"
+                value={latitude}
+                onChange={(e) => { setLatitude(e.target.value); setGeoSuccess(false); }}
+              />
+            </label>
+            <label className="block text-xs text-slate-500">
+              Longitude
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                placeholder="e.g. 80.270700"
+                value={longitude}
+                onChange={(e) => { setLongitude(e.target.value); setGeoSuccess(false); }}
+              />
+            </label>
+          </div>
+
+          {/* ── Live OSM map preview ── */}
+          {(() => {
+            const lat = parseFloat(latitude);
+            const lng = parseFloat(longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            const delta = 0.004;
+            const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - delta},${lat - delta},${lng + delta},${lat + delta}&layer=mapnik&marker=${lat},${lng}`;
+            return (
+              <div className="overflow-hidden rounded-xl border border-slate-700">
+                <p className="border-b border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] font-medium text-slate-400">
+                  📍 Map preview — {lat.toFixed(5)}, {lng.toFixed(5)}
+                </p>
+                <iframe
+                  src={src}
+                  title="Spot location preview"
+                  className="h-52 w-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block border-t border-slate-700 bg-slate-900 px-3 py-1.5 text-center text-[11px] text-sky-400 hover:text-sky-300"
+                >
+                  Open in OpenStreetMap ↗
+                </a>
+              </div>
+            );
+          })()}
+
+          {/* ── Address fields ── */}
           <label className="block text-xs text-slate-500">
             Address line
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} />
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+              placeholder="Street / road name"
+              value={addressLine}
+              onChange={(e) => setAddressLine(e.target.value)}
+            />
           </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs text-slate-500">
+              Landmark (optional)
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                placeholder="Near Anna Nagar Tower"
+                value={landmark}
+                onChange={(e) => setLandmark(e.target.value)}
+              />
+            </label>
+            <label className="block text-xs text-slate-500">
+              Pincode
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                placeholder="600001"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+              />
+            </label>
+          </div>
           <label className="block text-xs text-slate-500">
-            Landmark (optional)
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
-          </label>
-          <label className="block text-xs text-slate-500">
-            Pincode
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" value={pincode} onChange={(e) => setPincode(e.target.value)} />
-          </label>
-          <label className="block text-xs text-slate-500">
-            Fuzzy landmark (public)
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2" value={fuzzyLandmark} onChange={(e) => setFuzzyLandmark(e.target.value)} />
+            Public area name <span className="text-slate-600">(shown to seekers instead of exact address)</span>
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+              placeholder="e.g. Anna Nagar, Velachery"
+              value={fuzzyLandmark}
+              onChange={(e) => setFuzzyLandmark(e.target.value)}
+            />
           </label>
         </section>
       ) : null}

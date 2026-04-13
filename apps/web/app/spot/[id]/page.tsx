@@ -6,7 +6,7 @@ type PageProps = { params: { id: string } };
 
 export default async function PublicSpotPage({ params }: PageProps) {
   const { id } = params;
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase.rpc("get_spot_seeker_detail", {
     p_spot_id: id,
   });

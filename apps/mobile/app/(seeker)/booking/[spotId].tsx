@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type VehicleRow = { id: string; vehicle_type: VehicleType; number_plate: string };
 
@@ -23,6 +24,7 @@ const DURATIONS = [1, 2, 3, 4] as const;
 export default function BookingWizardScreen() {
   const { spotId } = useLocalSearchParams<{ spotId: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { payBooking } = useRazorpay();
 
   const [step, setStep] = useState(1);
@@ -164,7 +166,7 @@ export default function BookingWizardScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.wrap}>
+    <ScrollView contentContainerStyle={[styles.wrap, { paddingBottom: Math.max(48, insets.bottom + 24) }]}>
       <Text style={styles.h1}>Book · {spot.title}</Text>
 
       {step === 1 && (

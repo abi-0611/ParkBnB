@@ -1,74 +1,86 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+/**
+ * Auth.js v5 middleware
+ *
+ * Replaces the previous Supabase-SSR middleware.
+ * Auth.js automatically handles:
+ *  - JWT cookie verification on every request
+ *  - CSRF token validation for mutation endpoints
+ *  - Session refresh (updateAge defined in auth.ts)
+ *
+ * This middleware just reads the already-verified session and applies
+ * route-level access control — no extra DB queries.
+ */
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 
-const PROTECTED_PREFIXES = ['/dashboard', '/spots', '/booking', '/bookings', '/admin'];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/profile",
+  "/spots",
+  "/booking",
+  "/bookings",
+  "/kyc",
+  "/admin",
+];
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+export default auth((req) => {
+  const session = req.auth;
+  const { pathname } = req.nextUrl;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
+  const isProtected = PROTECTED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
-
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', path);
+  // ── Not authenticated → send to /login ──────────────────────────────────
+  if (isProtected && !session?.user) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  const isAdminRoute = path === '/admin' || path.startsWith('/admin/');
-  if (isAdminRoute && user) {
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
-    if (profile?.role !== 'admin') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      url.search = '';
-      return NextResponse.redirect(url);
-    }
-  }
-
-  if (path.startsWith('/login') && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    url.search = '';
+  // ── Banned user → block immediately ─────────────────────────────────────
+  if (session?.user?.isBanned) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.search   = "?error=banned";
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
-}
+  // ── Admin routes: require role === "admin" ───────────────────────────────
+  const isAdminRoute =
+    pathname === "/admin" || pathname.startsWith("/admin/");
+
+  if (isAdminRoute && session?.user?.role !== "admin") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search   = "";
+    return NextResponse.redirect(url);
+  }
+
+  // ── Already signed in → skip login page ─────────────────────────────────
+  if (pathname.startsWith("/login") && session?.user) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search   = "";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/spots/:path*',
-    '/booking/:path*',
-    '/bookings',
-    '/bookings/:path*',
-    '/admin',
-    '/admin/:path*',
-    '/login',
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/spots/:path*",
+    "/booking/:path*",
+    "/bookings",
+    "/bookings/:path*",
+    "/kyc",
+    "/kyc/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/login",
   ],
 };

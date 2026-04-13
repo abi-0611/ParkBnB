@@ -1,43 +1,214 @@
 # ParkNear
 
-Monorepo for **ParkNear** — a Chennai peer-to-peer parking marketplace (React Native / Expo + Next.js + Supabase).
+ParkNear is a monorepo for a peer-to-peer parking marketplace:
 
-## Structure
+- `apps/web`: Next.js App Router web app
+- `apps/mobile`: Expo Router mobile app
+- `packages/shared`: shared types, schemas, and utilities
+- `supabase`: SQL migrations and backend configuration
 
-- `apps/mobile` — Expo Router app
-- `apps/web` — Next.js 14 (App Router)
-- `packages/shared` — Shared TypeScript types, Zod schemas, utilities
-- `supabase` — Migrations, seed, Edge Functions (later)
+---
 
-## Prerequisites
+## Tech Stack
 
-- Node.js 18+
-- pnpm (`npx pnpm` works if pnpm is not installed globally)
-- Docker Desktop (for local Supabase: `supabase start` / `supabase db reset`)
+- Node.js + pnpm workspaces
+- Next.js 14 (web)
+- Expo / React Native (mobile)
+- Supabase (Postgres, Auth, Storage, Realtime)
+- Auth.js (web authentication)
+- Mapbox (maps/static maps)
+- Razorpay (payments)
 
-## Setup
+---
 
-1. Copy `.env.example` into `apps/web/.env.local` and `apps/mobile/.env` with your Supabase URL and anon key.
-2. Enable **PostGIS** on your Supabase project (Database → Extensions) if applying migrations remotely.
-3. Apply SQL: `supabase db push` (linked project) or `supabase db reset` (local).
-4. Install dependencies: `pnpm install` (from repo root).
+## 1) Clone And Bootstrap From Scratch
 
-## Scripts
+### Prerequisites
 
-- `pnpm dev:web` — Next.js dev server
-- `pnpm dev:mobile` — Expo dev server
-- `pnpm typecheck` — TypeScript across packages
-- `pnpm deploy:web:build` — verify production web build
-- `pnpm deploy:mobile:android:preview` — create Android preview APK via EAS
-- `pnpm supabase:db:push` — apply migrations to linked Supabase project
-- `pnpm supabase:functions:deploy` — deploy all edge functions
+- Node.js 20 LTS (recommended; minimum 18)
+- pnpm 9+
+- Git
+- Optional for local DB: Docker Desktop + Supabase CLI
+- Optional for mobile builds: Expo account + EAS CLI
 
-## Deployment
+### Clone
 
-- Mobile EAS config: `apps/mobile/eas.json`
-- Full runbook: `docs/DEPLOYMENT.md`
+```bash
+git clone <your-github-repo-url>
+cd ParkBNB
+```
 
-## Brand
+### Install dependencies
 
-- Primary: `#0EA5E9` (sky)
-- Accent: `#10B981` (emerald)
+```bash
+pnpm install
+```
+
+---
+
+## 2) Environment Setup
+
+Use `.env.example` at repo root as the source of truth.
+
+### Web (`apps/web/.env.local`)
+
+Required:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only routes/actions)
+
+Common optional variables:
+
+- `NEXT_PUBLIC_MAPBOX_TOKEN`
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `SUPABASE_ACCESS_TOKEN` (CLI automation)
+- `CRON_SECRET`
+
+### Mobile (`apps/mobile/.env`)
+
+Required:
+
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+
+Optional:
+
+- `EXPO_PUBLIC_MAPBOX_TOKEN`
+
+### Quick copy flow
+
+macOS/Linux:
+
+```bash
+cp .env.example apps/web/.env.local
+cp .env.example apps/mobile/.env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example apps/web/.env.local
+Copy-Item .env.example apps/mobile/.env
+```
+
+Then edit both files and keep only the relevant variable names per app.
+
+---
+
+## 3) Database Setup (Supabase)
+
+### Option A: Use hosted Supabase project
+
+1. Create/link your Supabase project.
+2. Ensure PostGIS extension is available.
+3. Apply migrations:
+
+```bash
+pnpm supabase:db:push
+```
+
+### Option B: Local Supabase with Docker
+
+```bash
+supabase start
+supabase db reset
+```
+
+If OTP/login behavior is inconsistent in local auth, review `supabase/config.toml` for OTP and rate-limit settings.
+
+---
+
+## 4) Run The Apps Locally
+
+### Web
+
+```bash
+pnpm dev:web
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+### Mobile
+
+```bash
+pnpm dev:mobile
+```
+
+Use Expo Go / emulator / simulator to open the app.
+
+Windows note for mobile tooling:
+
+- Install Android Studio for emulator support.
+- If using physical device + Expo Go, ensure phone and dev machine are on the same network.
+
+---
+
+## 5) Quality Checks
+
+```bash
+pnpm typecheck
+pnpm --filter web lint
+pnpm deploy:web:build
+```
+
+---
+
+## 6) Deployment Commands
+
+- `pnpm deploy:web:build` - production build verification for web
+- `pnpm deploy:mobile:android:preview` - EAS preview APK
+- `pnpm supabase:db:push` - push DB migrations
+- `pnpm supabase:functions:deploy` - deploy Supabase edge functions
+
+See `docs/DEPLOYMENT.md` for the full runbook.
+
+---
+
+## 7) CI/CD (GitHub Actions)
+
+This repository includes:
+
+- `CI`: install, typecheck, lint, and web build on push/PR
+- `Deploy Web`: Vercel deployment workflow
+- `Deploy Mobile Preview`: EAS Android preview workflow
+
+Set these GitHub repository secrets before using deploy workflows:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `EXPO_TOKEN`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_MAPBOX_TOKEN` (optional but recommended)
+- `RAZORPAY_KEY_ID` (if required by your build/runtime checks)
+
+Recommended repository settings:
+
+- Protect `main` and require the `CI` workflow to pass before merge.
+- Keep deploy workflows as `workflow_dispatch` for controlled releases, or use `push` on `main` only.
+
+---
+
+## 8) Workspace Layout
+
+```text
+apps/
+  mobile/        # Expo app
+  web/           # Next.js app
+packages/
+  shared/        # Shared TS package
+supabase/        # Migrations/config
+docs/            # Runbooks and docs
+```
+
+---
+
+## Notes
+
+- Do not commit real env files or secrets.
+- `.next/` and other build artifacts should stay untracked.
+- Keep dependency upgrades conservative around Expo/Next major versions unless doing a planned migration.

@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getSpotPhotoPublicUrl } from '@parknear/shared';
 
@@ -28,6 +29,7 @@ export default function OwnerDashboardScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
+  const insets = useSafeAreaInsets();
 
   const { spots, stats, loading, fetchDashboard, toggleSpotActive, deleteSpot } = useOwnerDashboardStore();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -74,12 +76,17 @@ export default function OwnerDashboardScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(100, 80 + insets.bottom) }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={styles.greet}>Hello, {profile?.full_name ?? 'Owner'}</Text>
-          <Pressable onPress={() => router.push('/(seeker)/home')}>
-            <Text style={{ color: SKY, fontWeight: '600' }}>Find parking</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <Pressable onPress={() => router.push('/(owner)/earnings')}>
+              <Text style={{ color: EMERALD, fontWeight: '600' }}>Earnings</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(seeker)/home')}>
+              <Text style={{ color: SKY, fontWeight: '600' }}>Find parking</Text>
+            </Pressable>
+          </View>
         </View>
 
         {loading ? (
@@ -152,7 +159,7 @@ export default function OwnerDashboardScreen() {
         )}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => router.push('/(owner)/spots/create')}>
+      <Pressable style={[styles.fab, { bottom: 28 + insets.bottom }]} onPress={() => router.push('/(owner)/spots/create')}>
         <Text style={styles.fabText}>+</Text>
       </Pressable>
     </View>
@@ -180,7 +187,7 @@ function StatCard({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
   center: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: 16, paddingBottom: 100, gap: 12 },
+  scroll: { padding: 16, gap: 12 },
   greet: { color: '#f8fafc', fontSize: 22, fontWeight: '700' },
   muted: { color: '#94a3b8' },
   statsRow: { gap: 12, paddingVertical: 8 },
@@ -225,7 +232,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 28,
+    /* bottom is set dynamically via insets */
     width: 56,
     height: 56,
     borderRadius: 28,

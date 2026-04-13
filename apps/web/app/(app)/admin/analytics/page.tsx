@@ -16,7 +16,7 @@ export default async function AdminAnalyticsPage({
   searchParams: { range?: string };
 }) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const rangeKey = searchParams.range === 'all' ? 'all' : searchParams.range ?? '30';
   const days = RANGE_DAYS[rangeKey] ?? 30;
   const start = days === null ? null : new Date(Date.now() - days * 864e5).toISOString();
@@ -80,8 +80,8 @@ export default async function AdminAnalyticsPage({
     <div className="mx-auto max-w-7xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Analytics</h1>
-          <p className="text-sm text-slate-600">Aggregated metrics (RLS admin access).</p>
+          <h1 className="text-2xl font-semibold text-txt-primary">Analytics</h1>
+          <p className="text-sm text-txt-secondary">Aggregated metrics (RLS admin access).</p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
           {(['7', '30', '90', 'all'] as const).map((r) => (
@@ -89,7 +89,7 @@ export default async function AdminAnalyticsPage({
               key={r}
               href={r === 'all' ? '/admin/analytics?range=all' : `/admin/analytics?range=${r}`}
               className={`rounded-lg border px-3 py-1.5 font-medium ${
-                currentRange === r ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                currentRange === r ? 'border-electric bg-electric text-white' : 'border-border-token bg-bg-surface text-txt-secondary hover:bg-bg-elevated'
               }`}
             >
               {r === 'all' ? 'All time' : `${r}d`}
@@ -119,9 +119,9 @@ export default async function AdminAnalyticsPage({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
+    <div className="rounded-xl border border-border-token bg-bg-surface p-4 shadow-card">
+      <p className="text-xs font-medium uppercase text-txt-muted">{label}</p>
+      <p className="mt-1 text-xl font-bold text-txt-primary">{value}</p>
     </div>
   );
 }

@@ -221,6 +221,9 @@ export default function SeekerHomeScreen() {
             <Pressable onPress={() => router.push('/(common)/chat')}>
               <Text style={styles.link}>{t('home.chat')}</Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/(common)/profile/index')}>
+              <Text style={styles.link}>Profile</Text>
+            </Pressable>
             <Pressable onPress={() => router.push('/(common)/profile/kyc')}>
               <Text style={styles.link}>{t('home.kyc')}</Text>
             </Pressable>

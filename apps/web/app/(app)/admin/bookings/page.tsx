@@ -17,7 +17,7 @@ export default async function AdminBookingsPage({
   searchParams: { q?: string; status?: string; spot?: string; page?: string };
 }) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
 
   const q = (searchParams.q ?? '').trim();
   const statusFilter = searchParams.status ?? '';
@@ -69,26 +69,26 @@ export default async function AdminBookingsPage({
   const statusBadge = (s: string) => {
     const cls =
       s === 'completed'
-        ? 'bg-emerald-100 text-emerald-800'
+        ? 'bg-emerald/15 text-emerald'
         : s === 'pending'
-          ? 'bg-amber-100 text-amber-800'
+          ? 'bg-warning/15 text-warning'
           : s.includes('cancel') || s === 'no_show'
-            ? 'bg-rose-100 text-rose-800'
-            : 'bg-slate-100 text-slate-800';
+            ? 'bg-danger/15 text-danger'
+            : 'bg-bg-elevated text-txt-secondary';
     return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>{s}</span>;
   };
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Bookings</h1>
-        <p className="text-sm text-slate-600">Operational view of all reservations.</p>
+        <h1 className="text-2xl font-semibold text-txt-primary">Bookings</h1>
+        <p className="text-sm text-txt-secondary">Operational view of all reservations.</p>
       </div>
 
-      <form className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4" action="/admin/bookings" method="get">
+      <form className="flex flex-wrap gap-3 rounded-xl border border-border-token bg-bg-surface p-4" action="/admin/bookings" method="get">
         <input type="hidden" name="spot" value={spotFilter} />
-        <input name="q" defaultValue={q} placeholder="Full booking UUID" className="rounded border border-slate-300 px-3 py-1.5 text-sm" />
-        <select name="status" defaultValue={statusFilter} className="rounded border border-slate-300 px-3 py-1.5 text-sm">
+        <input name="q" defaultValue={q} placeholder="Full booking UUID" className="rounded border border-border-token bg-bg-elevated px-3 py-1.5 text-sm text-txt-primary" />
+        <select name="status" defaultValue={statusFilter} className="rounded border border-border-token bg-bg-elevated px-3 py-1.5 text-sm text-txt-primary">
           <option value="">All statuses</option>
           <option value="pending">pending</option>
           <option value="confirmed">confirmed</option>
@@ -100,14 +100,14 @@ export default async function AdminBookingsPage({
           <option value="no_show">no_show</option>
           <option value="disputed">disputed</option>
         </select>
-        <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">
+        <button type="submit" className="rounded-lg bg-electric px-4 py-2 text-sm text-white">
           Filter
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-border-token bg-bg-surface shadow-card">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b bg-slate-50 text-xs font-semibold uppercase text-slate-600">
+          <thead className="border-b border-border-token bg-bg-elevated text-xs font-semibold uppercase text-txt-secondary">
             <tr>
               <th className="px-4 py-3">ID</th>
               <th className="px-4 py-3">Seeker</th>
@@ -120,13 +120,13 @@ export default async function AdminBookingsPage({
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border-token">
             {(bookings ?? []).map((b) => {
               const seeker = seekers?.find((s) => s.id === b.seeker_id);
               const spot = spots?.find((s) => s.id === b.spot_id);
               const owner = owners?.find((o) => o.id === spot?.owner_id);
               return (
-                <tr key={b.id} className="hover:bg-slate-50">
+                <tr key={b.id} className="hover:bg-bg-elevated/70">
                   <td className="px-4 py-2 font-mono text-xs">
                     <Link href={`/admin/bookings/${b.id}`} className="text-sky-700 hover:underline">
                       {shortBookingId(b.id)}
@@ -135,7 +135,7 @@ export default async function AdminBookingsPage({
                   <td className="px-4 py-2">{seeker?.full_name ?? '—'}</td>
                   <td className="px-4 py-2">{spot?.title ?? '—'}</td>
                   <td className="px-4 py-2">{owner?.full_name ?? '—'}</td>
-                  <td className="px-4 py-2 whitespace-nowrap text-slate-700">
+                  <td className="px-4 py-2 whitespace-nowrap text-txt-secondary">
                     {new Date(b.start_time).toLocaleString()} → {new Date(b.end_time).toLocaleString()}
                   </td>
                   <td className="px-4 py-2">{b.booking_type}</td>
@@ -151,18 +151,18 @@ export default async function AdminBookingsPage({
         </table>
       </div>
 
-      <div className="flex justify-between text-sm text-slate-600">
+      <div className="flex justify-between text-sm text-txt-secondary">
         <span>
           Page {page} / {pages} ({count ?? 0} bookings)
         </span>
         <div className="flex gap-2">
           {page > 1 ? (
-            <Link className="rounded border px-3 py-1" href={`/admin/bookings?${baseQs ? `${baseQs}&` : ''}page=${page - 1}`}>
+            <Link className="rounded border border-border-token bg-bg-surface px-3 py-1 hover:bg-bg-elevated" href={`/admin/bookings?${baseQs ? `${baseQs}&` : ''}page=${page - 1}`}>
               Previous
             </Link>
           ) : null}
           {page < pages ? (
-            <Link className="rounded border px-3 py-1" href={`/admin/bookings?${baseQs ? `${baseQs}&` : ''}page=${page + 1}`}>
+            <Link className="rounded border border-border-token bg-bg-surface px-3 py-1 hover:bg-bg-elevated" href={`/admin/bookings?${baseQs ? `${baseQs}&` : ''}page=${page + 1}`}>
               Next
             </Link>
           ) : null}

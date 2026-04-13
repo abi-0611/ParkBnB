@@ -4,10 +4,11 @@ import { FlashList } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { Skeleton } from '@/components/Skeleton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function Tab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -19,9 +20,11 @@ function Tab({ label, active, onPress }: { label: string; active: boolean; onPre
 
 export default function MyBookingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'upcoming' | 'active' | 'past'>('upcoming');
   const [rows, setRows] = useState<BookingSeekerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,6 +44,52 @@ export default function MyBookingsScreen() {
       void load();
     }, [load])
   );
+
+  const confirmCancel = (bookingId: string, startTime: string) => {
+    const minsUntilStart = (new Date(startTime).getTime() - Date.now()) / 60_000;
+    const refundMsg =
+      minsUntilStart > 30
+        ? 'You will receive a full refund.'
+        : minsUntilStart > 0
+        ? 'You will receive a 50% refund (less than 30 minutes notice).'
+        : 'No refund — the booking start time has passed.';
+
+    Alert.alert(
+      'Cancel booking?',
+      `${refundMsg}\n\nThis cannot be undone.`,
+      [
+        { text: 'Keep booking', style: 'cancel' },
+        {
+          text: 'Cancel booking',
+          style: 'destructive',
+          onPress: async () => {
+            setCancellingId(bookingId);
+            const { error } = await supabase
+              .from('bookings')
+              .update({
+                status:              'cancelled_by_seeker',
+                cancelled_at:        new Date().toISOString(),
+                cancellation_reason: 'Cancelled by seeker via app',
+                payment_status:      'refunded',
+                refund_amount:
+                  minsUntilStart > 30
+                    ? undefined // let server compute if available; here just mark
+                    : undefined,
+              })
+              .eq('id', bookingId)
+              .in('status', ['pending', 'confirmed']);
+            setCancellingId(null);
+            if (error) {
+              Toast.show({ type: 'error', text1: 'Cancellation failed', text2: error.message });
+            } else {
+              Toast.show({ type: 'success', text1: 'Booking cancelled' });
+              void load();
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const filtered = rows.filter((b) => {
     if (tab === 'upcoming') return b.status === 'confirmed' && new Date(b.start_time) > new Date();
@@ -96,6 +145,15 @@ export default function MyBookingsScreen() {
                 <Text style={styles.actionLink}>Dispute</Text>
               </Pressable>
             ) : null}
+            {['confirmed', 'pending'].includes(item.status) ? (
+              cancellingId === item.id ? (
+                <ActivityIndicator size="small" color="#ef4444" />
+              ) : (
+                <Pressable onPress={() => confirmCancel(item.id, item.start_time)}>
+                  <Text style={styles.cancelLink}>Cancel</Text>
+                </Pressable>
+              )
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -121,7 +179,7 @@ export default function MyBookingsScreen() {
           data={filtered}
           keyExtractor={(i) => i.id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: Math.max(40, insets.bottom + 16) }}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyTitle}>No bookings in this tab yet.</Text>
@@ -152,6 +210,7 @@ const styles = StyleSheet.create({
   outTx: { color: '#fff', fontWeight: '800', fontSize: 13 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 },
   actionLink: { color: '#0ea5e9', fontWeight: '700', fontSize: 13 },
+  cancelLink: { color: '#ef4444', fontWeight: '700', fontSize: 13 },
   emptyBox: { marginTop: 24, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', borderRadius: 12, padding: 16 },
   emptyTitle: { fontWeight: '800', color: '#0f172a' },
   emptyBody: { marginTop: 4, color: '#64748b' },

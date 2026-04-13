@@ -8,7 +8,7 @@ import { DisputeResolveForm } from '../DisputeResolveForm';
 
 export default async function AdminDisputeDetailPage({ params }: { params: { id: string } }) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const id = params.id;
 
   const { data: d, error } = await supabase.from('disputes').select('*').eq('id', id).single();

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import {
   motion,
   AnimatePresence,
@@ -32,6 +33,9 @@ export function Navbar({ locale }: NavbarProps) {
   const [scrolled, setScrolled]     = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { scrollY } = useScroll();
+  const { data: session, status } = useSession();
+  const isAuth = status === "authenticated" && !!session?.user;
+  const [profilePercent, setProfilePercent] = useState<number | null>(null);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > 24);
@@ -45,6 +49,24 @@ export function Navbar({ locale }: NavbarProps) {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadCompletion() {
+      if (!isAuth) {
+        setProfilePercent(null);
+        return;
+      }
+      const res = await fetch("/api/profile/completion", { cache: "no-store" });
+      if (!res.ok) return;
+      const json = (await res.json()) as { percent?: number };
+      if (!ignore) setProfilePercent(typeof json.percent === "number" ? json.percent : null);
+    }
+    void loadCompletion();
+    return () => {
+      ignore = true;
+    };
+  }, [isAuth, pathname]);
 
   return (
     <>
@@ -102,11 +124,32 @@ export function Navbar({ locale }: NavbarProps) {
             transition={{ delay: 0.4, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
             <LanguageSwitcher locale={locale} />
-            <Link href="/login">
-              <GlowButton variant="glass" size="sm">
-                Sign in
-              </GlowButton>
-            </Link>
+            {status !== "loading" && (
+              isAuth ? (
+                <>
+                  {profilePercent !== null && profilePercent < 100 ? (
+                    <Link href="/profile" className="hidden lg:block">
+                      <span className="inline-flex items-center rounded-full border border-warning/50 bg-warning/10 px-2.5 py-1 text-[11px] font-semibold text-warning">
+                        Profile {profilePercent}% complete
+                      </span>
+                    </Link>
+                  ) : null}
+                  <GlowButton
+                    variant="glass"
+                    size="sm"
+                    onClick={() => void signOut({ redirectTo: "/" })}
+                  >
+                    Sign out
+                  </GlowButton>
+                </>
+              ) : (
+                <Link href="/login">
+                  <GlowButton variant="glass" size="sm">
+                    Sign in
+                  </GlowButton>
+                </Link>
+              )
+            )}
             <Link href="/search">
               <GlowButton variant="primary" size="sm">
                 Find parking
@@ -207,11 +250,29 @@ export function Navbar({ locale }: NavbarProps) {
 
               <div className="border-t border-border-token p-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/login" className="w-full">
-                    <GlowButton variant="glass" size="md" fullWidth>
-                      Sign in
-                    </GlowButton>
-                  </Link>
+                  {isAuth ? (
+                    <div className="col-span-2 space-y-2">
+                      {profilePercent !== null && profilePercent < 100 ? (
+                        <Link href="/profile" className="block rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-center text-xs font-semibold text-warning">
+                          Profile {profilePercent}% complete
+                        </Link>
+                      ) : null}
+                      <GlowButton
+                        variant="glass"
+                        size="md"
+                        fullWidth
+                        onClick={() => void signOut({ redirectTo: "/" })}
+                      >
+                        Sign out
+                      </GlowButton>
+                    </div>
+                  ) : (
+                    <Link href="/login" className="w-full">
+                      <GlowButton variant="glass" size="md" fullWidth>
+                        Sign in
+                      </GlowButton>
+                    </Link>
+                  )}
                   <Link href="/search" className="w-full">
                     <GlowButton variant="primary" size="md" fullWidth>
                       Find parking

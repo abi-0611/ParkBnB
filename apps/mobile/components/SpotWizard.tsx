@@ -2,6 +2,7 @@ import { spotSchema } from '@parknear/shared';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
@@ -66,6 +67,7 @@ export function SpotWizard({ mode }: Props) {
   const spotId = typeof routeId === 'string' ? routeId : Array.isArray(routeId) ? routeId[0] : undefined;
 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 
@@ -310,7 +312,7 @@ export function SpotWizard({ mode }: Props) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: BG }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(48, insets.bottom + 24) }]}>
         <Text style={styles.stepLabel}>
           Step {s.step}/4 · {mode === 'edit' ? 'Edit listing' : 'New listing'}
         </Text>

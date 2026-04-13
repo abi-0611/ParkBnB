@@ -6,8 +6,18 @@ import { requireAdmin } from '@/lib/admin/require-admin';
 
 export default async function AdminUserDetailPage({ params }: { params: { id: string } }) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const id = params.id;
+
+  async function toSignedUrl(pathOrUrl: string | null): Promise<string | null> {
+    if (!pathOrUrl) return null;
+    if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) return pathOrUrl;
+    const normalized = pathOrUrl.replace(/^\/+/, '');
+    const { data } = await supabase.storage
+      .from('kyc-documents')
+      .createSignedUrl(normalized, 60 * 60);
+    return data?.signedUrl ?? null;
+  }
 
   const { data: u, error } = await supabase.from('users').select('*').eq('id', id).single();
   if (error || !u) notFound();
@@ -34,6 +44,12 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
         .order('created_at', { ascending: false })
         .limit(40),
     ]);
+
+  const [aadhaarUrl, selfieUrl, propertyProofUrl] = await Promise.all([
+    toSignedUrl(u.aadhaar_doc_url),
+    toSignedUrl(u.selfie_url),
+    toSignedUrl(u.property_proof_url),
+  ]);
 
   const spotIds = Array.from(new Set((bookingsSeeker ?? []).map((b) => b.spot_id)));
   const { data: spots } = spotIds.length
@@ -77,9 +93,9 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
         <h2 className="text-sm font-semibold text-slate-900">KYC & documents</h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-3">
           {[
-            ['Aadhaar / ID', u.aadhaar_doc_url],
-            ['Selfie', u.selfie_url],
-            ['Property proof', u.property_proof_url],
+            ['Aadhaar / ID', aadhaarUrl],
+            ['Selfie', selfieUrl],
+            ['Property proof', propertyProofUrl],
           ].map(([label, url]) => (
             <div key={String(label)}>
               <p className="text-xs text-slate-500">{label}</p>

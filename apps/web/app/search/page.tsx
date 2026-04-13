@@ -1,6 +1,6 @@
 "use client";
 
-import { searchSpotsNearby, type SearchSpotsResult } from "@parknear/shared";
+import { getSpotPhotoPublicUrl, searchSpotsNearby, type SearchSpotsResult } from "@parknear/shared";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,7 @@ function formatInr(n: string | number | null | undefined) {
   const num = typeof n === "number" ? n : Number(n);
   return Number.isFinite(num) ? `₹${Math.round(num)}` : "—";
 }
+
 
 // ─── Skeleton card ──────────────────────────────────────────
 function SpotSkeleton() {
@@ -43,6 +44,8 @@ function SpotSkeleton() {
 // ─── Spot card ──────────────────────────────────────────────
 function SpotCard({ spot, index }: { spot: SearchSpotsResult; index: number }) {
   const photo = spot.photos[0];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const photoSrc = photo ? getSpotPhotoPublicUrl(supabaseUrl, photo) : null;
   const rating =
     typeof spot.avg_rating === "number"
       ? spot.avg_rating
@@ -71,10 +74,10 @@ function SpotCard({ spot, index }: { spot: SearchSpotsResult; index: number }) {
         >
           {/* Photo */}
           <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-bg-elevated">
-            {photo ? (
+            {photoSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={photo}
+                src={photoSrc}
                 alt={spot.title}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />

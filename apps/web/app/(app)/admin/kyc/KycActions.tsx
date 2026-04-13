@@ -14,7 +14,7 @@ export function KycActions({ userId }: { userId: string }) {
       <button
         type="button"
         disabled={pending}
-        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+        className="rounded-lg bg-emerald px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald/90 disabled:opacity-50"
         onClick={() => {
           if (!window.confirm('Approve KYC for this user?')) return;
           startTransition(() => {
@@ -27,7 +27,7 @@ export function KycActions({ userId }: { userId: string }) {
       <button
         type="button"
         disabled={pending}
-        className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-50 disabled:opacity-50"
+        className="rounded-lg border border-danger/30 bg-bg-surface px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger/10 disabled:opacity-50"
         onClick={() => {
           const reason = window.prompt('Rejection reason (shown internally)');
           if (reason === null) return;

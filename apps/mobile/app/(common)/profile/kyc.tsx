@@ -3,9 +3,11 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function KycScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [aadhaar, setAadhaar] = useState<string | null>(null);
   const [selfie, setSelfie] = useState<string | null>(null);
   const [property, setProperty] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export default function KycScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.wrap}>
+    <ScrollView contentContainerStyle={[styles.wrap, { paddingBottom: Math.max(40, insets.bottom + 24) }]}>
       <Text style={styles.status}>Status: {status}</Text>
       <DocumentUploader label="ID document (Aadhaar / PAN)" valueUri={aadhaar} onPick={setAadhaar} />
       <DocumentUploader label="Selfie" valueUri={selfie} onPick={setSelfie} />

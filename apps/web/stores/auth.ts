@@ -1,90 +1,76 @@
-'use client';
+/**
+ * Auth store — Auth.js v5 edition
+ *
+ * Replaces the Supabase Zustand store.
+ * All session state now comes from Auth.js via `useSession()`.
+ * This module provides a thin, typed wrapper so existing components
+ * that imported `useAuthStore` can migrate with minimal changes.
+ *
+ * Usage:
+ *   const { user, isAuthenticated, isLoading } = useAuthStore();
+ *   const { signOut } = useAuthActions();
+ */
+"use client";
 
-import type { User } from '@parknear/shared';
-import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { create } from 'zustand';
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
+import type { Session } from "next-auth";
 
-import { createClient } from '@/lib/supabase/client';
+// ─── Derived session shape ────────────────────────────────────────────────────
 
-type AuthState = {
-  user: SupabaseUser | null;
-  session: Session | null;
-  profile: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  signInWithOtp: (email: string, fullName?: string) => Promise<{ error: Error | null }>;
-  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-  fetchProfile: () => Promise<void>;
+export type AuthUser = {
+  id:         string;
+  email:      string | null | undefined;
+  name:       string | null | undefined;
+  image:      string | null | undefined;
+  role:       string;
+  kycStatus:  string;
+  isBanned:   boolean;
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  session: null,
-  profile: null,
-  isLoading: true,
-  isAuthenticated: false,
+function toAuthUser(session: Session | null): AuthUser | null {
+  if (!session?.user?.id) return null;
+  const u = session.user as Session["user"] & {
+    role?: string; kycStatus?: string; isBanned?: boolean;
+  };
+  return {
+    id:        u.id,
+    email:     u.email,
+    name:      u.name,
+    image:     u.image,
+    role:      u.role      ?? "seeker",
+    kycStatus: u.kycStatus ?? "not_submitted",
+    isBanned:  u.isBanned  ?? false,
+  };
+}
 
-  signInWithOtp: async (email, fullName) => {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        data: fullName ? { full_name: fullName } : undefined,
-      },
-    });
-    return { error: error as Error | null };
-  },
+// ─── Primary hook ────────────────────────────────────────────────────────────
 
-  verifyOtp: async (email, token) => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'email',
-    });
-    if (error) return { error: error as Error };
+/**
+ * Drop-in replacement for the old `useAuthStore`.
+ * Returns session state from Auth.js.
+ */
+export function useAuthStore() {
+  const { data: session, status, update } = useSession();
+  const user = toAuthUser(session);
 
-    set({
-      session: data.session,
-      user: data.user,
-      isAuthenticated: !!data.session,
-    });
-    await get().fetchProfile();
-    return { error: null };
-  },
+  return {
+    user,
+    profile:         user,                 // alias — legacy components used "profile"
+    isLoading:       status === "loading",
+    isAuthenticated: status === "authenticated" && !!user,
+    session,
+    /** Force-refresh the JWT (e.g. after KYC approval). */
+    refreshSession:  update,
+  };
+}
 
-  signOut: async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    set({ user: null, session: null, profile: null, isAuthenticated: false });
-  },
+// ─── Auth actions ─────────────────────────────────────────────────────────────
 
-  refreshSession: async () => {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getSession();
-    set({
-      session: data.session,
-      user: data.session?.user ?? null,
-      isAuthenticated: !!data.session,
-    });
-    if (data.session) await get().fetchProfile();
-  },
-
-  fetchProfile: async () => {
-    const supabase = createClient();
-    const uid = get().user?.id;
-    if (!uid) {
-      set({ profile: null });
-      return;
-    }
-    const { data, error } = await supabase.from('users').select('*').eq('id', uid).maybeSingle();
-    if (error || !data) {
-      set({ profile: null });
-      return;
-    }
-    set({ profile: data as User });
-  },
-}));
+/**
+ * Thin wrappers around Auth.js actions for use in client components.
+ */
+export function useAuthActions() {
+  return {
+    signOut: () => nextAuthSignOut({ redirectTo: "/" }),
+  };
+}

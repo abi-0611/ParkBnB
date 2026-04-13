@@ -5,6 +5,7 @@ import { getSpotSeekerDetail, type SpotSeekerDetail } from '@parknear/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function formatInr(n: string | number | null | undefined) {
   if (n == null) return null;
@@ -16,6 +17,7 @@ function formatInr(n: string | number | null | undefined) {
 export default function SeekerSpotDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [spot, setSpot] = useState<SpotSeekerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export default function SeekerSpotDetailScreen() {
   const rating = typeof spot.avg_rating === 'number' ? spot.avg_rating : Number(spot.avg_rating);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: Math.max(40, insets.bottom + 24) }]}>
       {hero ? <Image source={{ uri: hero }} style={styles.hero} /> : <View style={[styles.hero, styles.ph]} />}
       <Text style={styles.title}>{spot.title}</Text>
       <Text style={styles.landmark}>{spot.fuzzy_landmark} · ~{spot.fuzzy_radius_meters}m area</Text>
@@ -107,7 +109,7 @@ export default function SeekerSpotDetailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { paddingBottom: 40 },
+  content: { /* paddingBottom set dynamically via insets */ },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#f8fafc' },
   err: { color: '#b91c1c', textAlign: 'center' },
   back: { marginTop: 16 },

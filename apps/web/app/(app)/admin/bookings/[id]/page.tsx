@@ -10,7 +10,7 @@ function shortId(id: string) {
 
 export default async function AdminBookingDetailPage({ params }: { params: { id: string } }) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const id = params.id;
 
   const { data: b, error } = await supabase.from('bookings').select('*').eq('id', id).single();

@@ -14,6 +14,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 
 type Row = {
@@ -35,6 +36,7 @@ type Row = {
 export default function BookingConfirmationScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { latitude, longitude } = useLocation();
   const [row, setRow] = useState<Row | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -123,7 +125,7 @@ export default function BookingConfirmationScreen() {
   const otpDigits = (row.gate_otp ?? '------').split('');
 
   return (
-    <ScrollView contentContainerStyle={styles.wrap}>
+    <ScrollView contentContainerStyle={[styles.wrap, { paddingBottom: Math.max(40, insets.bottom + 24) }]}>
       <Text style={styles.success}>Booking confirmed</Text>
       <Text style={styles.title}>{row.spots?.title}</Text>
       <Text style={styles.meta}>

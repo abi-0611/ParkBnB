@@ -1,3 +1,56 @@
+@import "mapbox-gl/dist/mapbox-gl.css";
+
+/* ── Mapbox: admin map popups (ParkNear dark glass). Default Mapbox shell is white; unscoped, body foreground would be invisible on white. */
+.pn-mapbox-popup .mapboxgl-popup-content {
+  padding: 0;
+  background: rgba(9, 9, 23, 0.96);
+  border: 1px solid rgba(99, 126, 255, 0.28);
+  border-radius: 12px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.35),
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(61, 123, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: #e8ecff;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pn-mapbox-popup .mapboxgl-popup-close-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 28px;
+  color: #8b9fd4;
+  border-radius: 6px;
+  right: 8px;
+  top: 8px;
+}
+.pn-mapbox-popup .mapboxgl-popup-close-button:hover {
+  color: #fff;
+  background: rgba(61, 123, 255, 0.18);
+}
+
+/* Popup tail — match card fill (anchor variants). */
+.pn-mapbox-popup.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.pn-mapbox-popup.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.pn-mapbox-popup.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
+  border-top-color: rgba(9, 9, 23, 0.96);
+}
+.pn-mapbox-popup.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.pn-mapbox-popup.mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+.pn-mapbox-popup.mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+  border-bottom-color: rgba(9, 9, 23, 0.96);
+}
+.pn-mapbox-popup.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: rgba(9, 9, 23, 0.96);
+}
+.pn-mapbox-popup.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: rgba(9, 9, 23, 0.96);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

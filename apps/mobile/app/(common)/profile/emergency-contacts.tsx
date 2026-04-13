@@ -2,10 +2,12 @@ import { supabase } from '@/lib/supabase';
 import type { EmergencyContact } from '@parknear/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function EmergencyContactsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [rows, setRows] = useState<EmergencyContact[]>([{ name: '', phone: '' }]);
   const [saving, setSaving] = useState(false);
 
@@ -43,7 +45,7 @@ export default function EmergencyContactsScreen() {
   };
 
   return (
-    <View style={styles.wrap}>
+    <ScrollView contentContainerStyle={[styles.wrap, { paddingBottom: Math.max(24, insets.bottom + 16) }]}>
       <Text style={styles.h}>Up to 3 contacts for SOS alerts (MVP logs only).</Text>
       {rows.map((r, i) => (
         <View key={i} style={styles.row}>
@@ -81,12 +83,12 @@ export default function EmergencyContactsScreen() {
       <Pressable style={styles.primary} disabled={saving} onPress={() => void save()}>
         <Text style={styles.primaryTx}>Save</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 16, backgroundColor: '#f8fafc', flex: 1 },
+  wrap: { padding: 16, backgroundColor: '#f8fafc' },
   h: { color: '#64748b', marginBottom: 16 },
   row: { gap: 8, marginBottom: 12 },
   input: {

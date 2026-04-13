@@ -185,8 +185,9 @@ password_requirements = ""
 # rp_origins = ["http://127.0.0.1:3000"]
 
 [auth.rate_limit]
-# Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+# Emails per hour (Auth / OTP). The default template used 2 — too low for dev; increase locally.
+# Hosted projects use Dashboard limits, not this file — redeploy/link does not change cloud Auth.
+email_sent = 100
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -218,7 +219,8 @@ enable_confirmations = false
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
-# Number of characters used in the email OTP.
+# Email OTP length (digits). Apps expect 6 — set the same for hosted projects:
+# Dashboard → Authentication → Providers → Email → OTP length = 6 (then emails match the app).
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600

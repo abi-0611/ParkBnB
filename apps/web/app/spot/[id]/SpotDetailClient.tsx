@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getSpotPhotoPublicUrl } from "@parknear/shared";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {
@@ -158,7 +159,9 @@ export function SpotDetailClient({
   data: Record<string, unknown>;
   spotId: string;
 }) {
-  const photos  = Array.isArray(data.photos)  ? (data.photos  as string[])                        : [];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const photosRaw  = Array.isArray(data.photos)  ? (data.photos  as string[]) : [];
+  const photos = photosRaw.map((p) => getSpotPhotoPublicUrl(supabaseUrl, p));
   const reviews = Array.isArray(data.reviews) ? (data.reviews as Review[])                         : [];
   const avgRating =
     reviews.length > 0

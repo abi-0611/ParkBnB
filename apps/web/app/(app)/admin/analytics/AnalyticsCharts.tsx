@@ -32,7 +32,7 @@ export function AnalyticsCharts({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <ChartCard title="Revenue by booking type (completed)">
-        <div className="h-64">
+        <div className="h-64 min-h-[16rem] min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -47,7 +47,7 @@ export function AnalyticsCharts({
         </div>
       </ChartCard>
       <ChartCard title="Users by role">
-        <div className="h-64">
+        <div className="h-64 min-h-[16rem] min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={rolePie} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -62,12 +62,12 @@ export function AnalyticsCharts({
         </div>
       </ChartCard>
       <ChartCard title="Revenue trend (daily, completed)">
-        <div className="h-64">
+        <div className="h-64 min-h-[16rem] min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(99, 126, 255, 0.16)" />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#8B9FD4" }} />
+              <YAxis tick={{ fontSize: 11, fill: "#8B9FD4" }} />
               <Tooltip formatter={(value) => `₹${Number(value ?? 0).toFixed(0)}`} />
               <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={false} />
             </LineChart>
@@ -75,12 +75,12 @@ export function AnalyticsCharts({
         </div>
       </ChartCard>
       <ChartCard title="Spots by area (count)">
-        <div className="h-64">
+        <div className="h-64 min-h-[16rem] min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={areaBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={60} />
-              <YAxis allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(99, 126, 255, 0.16)" />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#8B9FD4" }} interval={0} angle={-25} textAnchor="end" height={60} />
+              <YAxis allowDecimals={false} tick={{ fill: "#8B9FD4" }} />
               <Tooltip />
               <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -93,8 +93,8 @@ export function AnalyticsCharts({
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+    <div className="min-w-0 rounded-xl border border-border-token bg-bg-surface p-5 shadow-card">
+      <h2 className="text-sm font-semibold text-txt-primary">{title}</h2>
       {children}
     </div>
   );

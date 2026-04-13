@@ -2,18 +2,22 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { auth } from '@/auth';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default async function AvailabilityPage({ params }: { params: { id: string } }) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  const session = await auth();
+  if (!session?.user?.id) redirect('/login');
 
-  const { data: spot } = await supabase.from('spots').select('id, title, owner_id').eq('id', params.id).single();
-  if (!spot || spot.owner_id !== user.id) {
+  const supabase = createServerSupabaseClient();
+  const { data: spot } = await supabase
+    .from('spots')
+    .select('id, title, owner_id')
+    .eq('id', params.id)
+    .single();
+
+  if (!spot || spot.owner_id !== session.user.id) {
     redirect('/dashboard');
   }
 
@@ -49,7 +53,7 @@ export default async function AvailabilityPage({ params }: { params: { id: strin
             {(rows ?? []).length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                  No availability rows yet. Save pricing & availability from the edit form.
+                  No availability rows yet. Save pricing &amp; availability from the edit form.
                 </td>
               </tr>
             ) : (

@@ -40,7 +40,7 @@ export function UserRowActions({
             void adminUpdateUserRole(userId, next).then(() => router.refresh());
           });
         }}
-        className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900"
+        className="rounded border border-border-token bg-bg-elevated px-2 py-1 text-xs text-txt-primary"
       >
         <option value="seeker">seeker</option>
         <option value="owner">owner</option>
@@ -50,7 +50,7 @@ export function UserRowActions({
       <button
         type="button"
         disabled={pending}
-        className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 hover:bg-amber-200"
+        className="rounded bg-warning/15 px-2 py-1 text-xs font-medium text-warning hover:bg-warning/25"
         onClick={() => {
           if (!window.confirm('Reset strikes to 0?')) return;
           startTransition(() => {
@@ -64,7 +64,7 @@ export function UserRowActions({
         type="button"
         disabled={pending}
         className={`rounded px-2 py-1 text-xs font-medium ${
-          isBanned ? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200' : 'bg-rose-100 text-rose-900 hover:bg-rose-200'
+          isBanned ? 'bg-emerald/15 text-emerald hover:bg-emerald/25' : 'bg-danger/15 text-danger hover:bg-danger/25'
         }`}
         onClick={() => {
           const reason = window.prompt(isBanned ? 'Unban note (optional)' : 'Ban reason');
@@ -79,7 +79,7 @@ export function UserRowActions({
       <button
         type="button"
         disabled={pending}
-        className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-800 hover:bg-rose-50"
+        className="rounded border border-danger/30 px-2 py-1 text-xs text-danger hover:bg-danger/10"
         onClick={() => {
           if (!confirmDel) {
             setConfirmDel(true);

@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const REASONS = [
   'Wrong spot info',
@@ -23,6 +24,7 @@ const REASONS = [
 export default function DisputeScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [reason, setReason] = useState(REASONS[0]);
   const [description, setDescription] = useState('');
   const [against, setAgainst] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function DisputeScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.wrap}>
+    <ScrollView contentContainerStyle={[styles.wrap, { paddingBottom: Math.max(40, insets.bottom + 24) }]}>
       <Text style={styles.label}>Reason</Text>
       <View style={styles.chips}>
         {REASONS.map((r) => (

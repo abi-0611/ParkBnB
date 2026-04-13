@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { onboardingStorage } from '@/lib/storage';
@@ -22,6 +23,7 @@ export default function OnboardingScreen() {
   const user = useAuthStore((s) => s.user);
   const fetchProfile = useAuthStore((s) => s.fetchProfile);
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const [selected, setSelected] = useState<UserRole>('seeker');
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(64, insets.top + 24) }]}>
       <Text style={styles.title}>How will you use ParkNear?</Text>
       <Text style={styles.sub}>Pick a role - you can change this later.</Text>
 
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#020617',
     padding: 24,
-    paddingTop: 64,
+    /* paddingTop is set dynamically via insets */
   },
   title: {
     fontSize: 24,

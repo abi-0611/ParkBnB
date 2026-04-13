@@ -7,6 +7,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 
@@ -81,21 +82,23 @@ function RootLayoutNav() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppErrorBoundary>
-        <BottomSheetModalProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <NetworkStatus />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(seeker)" />
-              <Stack.Screen name="(owner)" />
-              <Stack.Screen name="(common)" />
-            </Stack>
-            <Toast />
-          </ThemeProvider>
-        </BottomSheetModalProvider>
-      </AppErrorBoundary>
+      <SafeAreaProvider>
+        <AppErrorBoundary>
+          <BottomSheetModalProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <NetworkStatus />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(seeker)" />
+                <Stack.Screen name="(owner)" />
+                <Stack.Screen name="(common)" />
+              </Stack>
+              <Toast />
+            </ThemeProvider>
+          </BottomSheetModalProvider>
+        </AppErrorBoundary>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

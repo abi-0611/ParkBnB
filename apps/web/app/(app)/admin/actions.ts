@@ -10,7 +10,7 @@ const ROLES = new Set(['seeker', 'owner', 'both', 'admin']);
 export async function adminUpdateUserRole(userId: string, role: string) {
   await requireAdmin();
   if (!ROLES.has(role)) throw new Error('Invalid role');
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('users').update({ role }).eq('id', userId);
   if (error) throw error;
   revalidatePath('/admin/users');
@@ -19,7 +19,7 @@ export async function adminUpdateUserRole(userId: string, role: string) {
 
 export async function adminResetStrikes(userId: string) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('users').update({ strike_count: 0 }).eq('id', userId);
   if (error) throw error;
   revalidatePath('/admin/users');
@@ -28,7 +28,7 @@ export async function adminResetStrikes(userId: string) {
 
 export async function adminSetBanned(userId: string, banned: boolean, reason: string | null) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase
     .from('users')
     .update({ is_banned: banned, updated_at: new Date().toISOString() })
@@ -41,7 +41,7 @@ export async function adminSetBanned(userId: string, banned: boolean, reason: st
 
 export async function adminDeleteUser(userId: string) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('users').delete().eq('id', userId);
   if (error) throw error;
   revalidatePath('/admin/users');
@@ -49,7 +49,7 @@ export async function adminDeleteUser(userId: string) {
 
 export async function adminSetKyc(userId: string, status: 'verified' | 'rejected', reason?: string) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const patch: Record<string, unknown> = {
     kyc_status: status,
     updated_at: new Date().toISOString(),
@@ -69,7 +69,7 @@ export async function adminSetKyc(userId: string, status: 'verified' | 'rejected
 
 export async function adminSetSpotActive(spotId: string, isActive: boolean) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('spots').update({ is_active: isActive }).eq('id', spotId);
   if (error) throw error;
   revalidatePath('/admin/spots');
@@ -77,7 +77,7 @@ export async function adminSetSpotActive(spotId: string, isActive: boolean) {
 
 export async function adminSetSpotFeatured(spotId: string, isFeatured: boolean) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('spots').update({ is_featured: isFeatured }).eq('id', spotId);
   if (error) throw error;
   revalidatePath('/admin/spots');
@@ -85,7 +85,7 @@ export async function adminSetSpotFeatured(spotId: string, isFeatured: boolean) 
 
 export async function adminDeleteSpot(spotId: string) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('spots').delete().eq('id', spotId);
   if (error) throw error;
   revalidatePath('/admin/spots');
@@ -96,7 +96,7 @@ export async function adminForceCancelBooking(
   opts: { refundAmount: number | null; reason: string }
 ) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const patch: Record<string, unknown> = {
     status: 'cancelled_by_owner',
     cancelled_at: new Date().toISOString(),
@@ -115,7 +115,7 @@ export async function adminForceCancelBooking(
 
 export async function adminOverrideBookingStatus(bookingId: string, status: string) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
   const { error } = await supabase.from('bookings').update({ status, updated_at: new Date().toISOString() }).eq('id', bookingId);
   if (error) throw error;
   revalidatePath('/admin/bookings');
@@ -132,7 +132,7 @@ export async function adminResolveDispute(
   }
 ) {
   await requireAdmin();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServerSupabaseClient();
 
   const { error: dErr } = await supabase
     .from('disputes')
