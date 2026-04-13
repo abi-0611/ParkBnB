@@ -13,6 +13,17 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { createClient } from "@supabase/supabase-js";
 
+/** Auth.js accepts AUTH_SECRET or legacy NEXTAUTH_SECRET — both must be set in Vercel for production. */
+function authSecret(): string | undefined {
+  return process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+}
+
+if (process.env.NODE_ENV === "production" && !authSecret()) {
+  console.error(
+    "[auth] Missing AUTH_SECRET (or NEXTAUTH_SECRET). Add it in Vercel → Project → Settings → Environment Variables, then redeploy."
+  );
+}
+
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 
 /** Service-role client for DB reads. Never exposed to the browser. */
@@ -79,7 +90,13 @@ async function ensureOAuthUser(
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const config: NextAuthConfig = {
-  secret: process.env.AUTH_SECRET,
+  /**
+   * Vercel / serverless: trust the Host header so Auth.js accepts the deployment URL.
+   * Without this + AUTH_SECRET, `/api/auth/session` often returns 500 in production.
+   */
+  trustHost: true,
+
+  secret: authSecret(),
 
   session: {
     strategy: "jwt",

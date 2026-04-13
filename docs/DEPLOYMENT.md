@@ -67,6 +67,8 @@ The web and mobile apps only accept a **6-digit** email code (`otpVerifySchema` 
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
 - `RAZORPAY_KEY_ID`
+- **`AUTH_SECRET`** — required for Auth.js in production (generate with `openssl rand -base64 32`). Without it, `/api/auth/session` returns **500**.
+- **`AUTH_URL`** — canonical origin of the site, e.g. `https://your-project.vercel.app` or your custom domain. Set for Production (and Preview if you use auth there) so sessions and callbacks use the correct host.
 
 ### Build locally before deploy
 

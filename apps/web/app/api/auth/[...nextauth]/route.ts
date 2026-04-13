@@ -5,4 +5,7 @@
  */
 import { handlers } from "@/auth";
 
+/** Node runtime: ensures all server env vars (AUTH_SECRET, Supabase keys) are available on Vercel. */
+export const runtime = "nodejs";
+
 export const { GET, POST } = handlers;
