@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
-const optionalIndianPhone = z
+/** Digits only, 10-digit Indian mobile (starts with 6–9). */
+const indianMobileDigits = z
   .string()
-  .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number')
-  .optional();
+  .min(1, 'Mobile number is required')
+  .transform((s) => s.replace(/\D/g, ''))
+  .refine((s) => /^[6-9]\d{9}$/.test(s), 'Enter a valid 10-digit Indian mobile number');
 
 const passwordSchema = z
   .string()
@@ -22,7 +24,7 @@ export const signUpSchema = z.object({
   full_name:       z.string().min(2, 'Name must be at least 2 characters'),
   password:        passwordSchema,
   confirmPassword: z.string(),
-  phone:           optionalIndianPhone,
+  phone:           indianMobileDigits,
 }).refine((d) => d.password === d.confirmPassword, {
   message: 'Passwords do not match',
   path:    ['confirmPassword'],

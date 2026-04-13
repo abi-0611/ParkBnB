@@ -57,6 +57,24 @@ export async function getSpotCoordinatesForSeeker(
   return { lat: Number(row.lat), lng: Number(row.lng) };
 }
 
+/** Owner name + phone when the current user is the seeker on an eligible booking (RPC-enforced). */
+export async function getOwnerContactForSeekerBooking(
+  client: SupabaseClient,
+  bookingId: string
+): Promise<{ full_name: string; phone: string | null } | null> {
+  const { data, error } = await client.rpc('get_owner_contact_for_seeker_booking', {
+    p_booking_id: bookingId,
+  });
+  if (error || data == null) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row == null || typeof row !== 'object') return null;
+  const o = row as { full_name?: unknown; phone?: unknown };
+  const full_name = typeof o.full_name === 'string' ? o.full_name : '';
+  const phone = typeof o.phone === 'string' && o.phone.trim() !== '' ? o.phone.trim() : null;
+  if (!full_name && !phone) return null;
+  return { full_name: full_name || 'Host', phone };
+}
+
 export type BookingSeekerRow = Booking & {
   spots?: {
     id: string;

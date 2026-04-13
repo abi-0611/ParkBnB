@@ -244,6 +244,7 @@ export function LoginForm() {
   const [password, setPassword]   = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [fullName, setFullName]   = useState("");
+  const [phone, setPhone]         = useState("");
   const [error, setError]         = useState<string | null>(
     errorParam === "banned" ? "Your account has been suspended. Contact support." : null
   );
@@ -255,6 +256,7 @@ export function LoginForm() {
     setError(null);
     setPassword("");
     setConfirmPw("");
+    setPhone("");
   }
 
   // ── Sign in ─────────────────────────────────────────────────────────────────
@@ -289,7 +291,13 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
 
-    const parsed = signUpSchema.safeParse({ email, password, confirmPassword: confirmPw, full_name: fullName });
+    const parsed = signUpSchema.safeParse({
+      email,
+      password,
+      confirmPassword: confirmPw,
+      full_name: fullName,
+      phone,
+    });
     if (!parsed.success) {
       setError(parsed.error.errors[0]?.message ?? "Invalid input");
       return;
@@ -306,6 +314,7 @@ export function LoginForm() {
         password:        parsed.data.password,
         confirmPassword: parsed.data.confirmPassword,
         full_name:       parsed.data.full_name,
+        phone:           parsed.data.phone,
       }),
     });
     const json = await res.json() as { ok?: boolean; error?: string };
@@ -465,6 +474,19 @@ export function LoginForm() {
                   id="full-name" label="Full name"
                   value={fullName} onChange={setFullName}
                   placeholder="Your name" autoComplete="name"
+                />
+              )}
+
+              {isSignUp && (
+                <FloatingInput
+                  id="phone"
+                  label="Mobile number"
+                  type="tel"
+                  value={phone}
+                  onChange={setPhone}
+                  placeholder="10-digit number"
+                  autoComplete="tel"
+                  required
                 />
               )}
 

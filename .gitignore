@@ -12,3 +12,5 @@ supabase/.branches
 .turbo
 coverage
 .vercel
+
+.vercel

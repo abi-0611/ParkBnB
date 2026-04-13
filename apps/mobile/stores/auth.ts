@@ -40,6 +40,7 @@ type AuthState = {
     email:    string,
     password: string,
     fullName: string,
+    phone:    string,
   ) => Promise<{ error: Error | null }>;
 
   signOut:         () => Promise<void>;
@@ -76,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // ── Sign up → sign in ────────────────────────────────────────────────────
-  signUp: async (email, password, fullName) => {
+  signUp: async (email, password, fullName, phone) => {
     // Step 1: Create the user via web API (uses service-role key, skips email confirmation)
     try {
       const res = await fetch(`${API_BASE}/api/auth/signup`, {
@@ -87,6 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           password,
           confirmPassword: password,   // we pre-validate on device; this satisfies the schema
           full_name: fullName.trim(),
+          phone,
         }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string };

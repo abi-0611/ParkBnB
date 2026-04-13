@@ -1,6 +1,6 @@
 import { useLocation } from '@/hooks/useLocation';
 import { supabase } from '@/lib/supabase';
-import { checkInRpc, getSpotCoordinatesForSeeker } from '@parknear/shared';
+import { checkInRpc, getOwnerContactForSeekerBooking, getSpotCoordinatesForSeeker } from '@parknear/shared';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -40,6 +40,7 @@ export default function BookingConfirmationScreen() {
   const { latitude, longitude } = useLocation();
   const [row, setRow] = useState<Row | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [ownerContact, setOwnerContact] = useState<{ full_name: string; phone: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [checkInBusy, setCheckInBusy] = useState(false);
@@ -76,6 +77,8 @@ export default function BookingConfirmationScreen() {
       const c = await getSpotCoordinatesForSeeker(supabase, r.spot_id);
       setCoords(c);
     }
+    const contact = await getOwnerContactForSeekerBooking(supabase, bookingId);
+    setOwnerContact(contact);
     setLoading(false);
   }, [bookingId]);
 
@@ -136,6 +139,21 @@ export default function BookingConfirmationScreen() {
         <Text style={styles.meta}>
           {row.vehicles.vehicle_type} · {row.vehicles.number_plate}
         </Text>
+      ) : null}
+
+      {ownerContact ? (
+        <View style={[styles.card, { marginTop: 16 }]}>
+          <Text style={styles.hostLabel}>Spot owner</Text>
+          <Text style={styles.address}>{ownerContact.full_name}</Text>
+          {ownerContact.phone ? (
+            <Pressable onPress={() => void Linking.openURL(`tel:${ownerContact.phone}`)}>
+              <Text style={styles.phoneLink}>{ownerContact.phone}</Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.muted}>Phone not on file</Text>
+          )}
+          <Text style={styles.muted}>Available after your booking is confirmed.</Text>
+        </View>
       ) : null}
 
       <Text style={styles.section}>Parking location</Text>
@@ -228,6 +246,8 @@ const styles = StyleSheet.create({
   success: { fontSize: 14, fontWeight: '800', color: '#059669', textTransform: 'uppercase' },
   title: { fontSize: 24, fontWeight: '900', color: '#0f172a', marginTop: 8 },
   meta: { marginTop: 6, color: '#64748b' },
+  hostLabel: { fontSize: 12, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: 6 },
+  phoneLink: { marginTop: 8, fontSize: 18, fontWeight: '800', color: '#0ea5e9' },
   section: { marginTop: 24, fontSize: 16, fontWeight: '800', color: '#0f172a' },
   card: {
     marginTop: 8,

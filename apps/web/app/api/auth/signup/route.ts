@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password, full_name } = parsed.data;
+  const { email, password, full_name, phone } = parsed.data;
   const db = adminDb();
 
   // Guard: reject if email already exists
@@ -72,13 +72,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 422 });
   }
 
-  // Backfill full_name in case the DB trigger didn't capture user_metadata
+  // Backfill full_name / phone in case the DB trigger didn't capture metadata
   if (data?.user?.id) {
     await db
       .from("users")
-      .update({ full_name: full_name.trim() })
-      .eq("id", data.user.id)
-      .is("full_name", null);
+      .update({
+        full_name: full_name.trim(),
+        phone,
+      })
+      .eq("id", data.user.id);
   }
 
   return NextResponse.json({ ok: true });

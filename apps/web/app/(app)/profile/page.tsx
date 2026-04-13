@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Car, FileBadge2, Shield } from "lucide-react";
 import { auth } from "@/auth";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { ProfilePhoneCard } from "@/components/profile/ProfilePhoneCard";
 import { VehicleManager } from "@/components/profile/VehicleManager";
 import { GlowButton } from "@/components/ui/glow-button";
 
@@ -15,7 +16,7 @@ export default async function ProfilePage() {
 
   const [{ count: vehicleCount }, { data: user }] = await Promise.all([
     supabase.from("vehicles").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("users").select("kyc_status, role").eq("id", userId).maybeSingle(),
+    supabase.from("users").select("kyc_status, role, phone").eq("id", userId).maybeSingle(),
   ]);
 
   const hasVehicle = (vehicleCount ?? 0) > 0;
@@ -63,6 +64,8 @@ export default async function ProfilePage() {
           </Link>
         </div>
       </section>
+
+      <ProfilePhoneCard initialPhone={user?.phone ?? null} />
 
       <VehicleManager />
     </main>

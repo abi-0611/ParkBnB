@@ -38,6 +38,7 @@ export default function LoginScreen() {
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName,        setFullName]        = useState('');
+  const [phone,           setPhone]           = useState('');
   const [showPassword,    setShowPassword]    = useState(false);
   const [showConfirm,     setShowConfirm]     = useState(false);
   const [error,           setError]           = useState<string | null>(null);
@@ -48,6 +49,7 @@ export default function LoginScreen() {
     setError(null);
     setPassword('');
     setConfirmPassword('');
+    setPhone('');
   }
 
   async function onSubmit() {
@@ -81,6 +83,7 @@ export default function LoginScreen() {
         password,
         confirmPassword,
         full_name:       fullName.trim(),
+        phone,
       });
       if (!parsed.success) {
         setError(parsed.error.errors[0]?.message ?? 'Invalid details');
@@ -92,6 +95,7 @@ export default function LoginScreen() {
         parsed.data.email,
         parsed.data.password,
         parsed.data.full_name,
+        parsed.data.phone,
       );
       setPending(false);
 
@@ -151,6 +155,18 @@ export default function LoginScreen() {
                 onChangeText={setFullName}
                 autoCapitalize="words"
                 autoComplete="name"
+                returnKeyType="next"
+              />
+              <Text style={styles.label}>Mobile number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="10-digit Indian number"
+                placeholderTextColor={SLATE}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                maxLength={15}
+                value={phone}
+                onChangeText={setPhone}
                 returnKeyType="next"
               />
             </>

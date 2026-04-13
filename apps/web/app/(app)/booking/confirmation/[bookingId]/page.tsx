@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { MapPin, Navigation, ArrowRight, Star } from "lucide-react";
+import { getOwnerContactForSeekerBooking } from "@parknear/shared";
+import { MapPin, Navigation, ArrowRight, Phone, Star } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -97,6 +98,7 @@ export default async function BookingConfirmationWebPage({ params }: Props) {
     spot_id: string;
   };
   const spot = Array.isArray(b.spots) ? b.spots[0] : b.spots;
+  const ownerContact = await getOwnerContactForSeekerBooking(supabase, params.bookingId);
   let coords: { lat: number; lng: number } | null = null;
 
   // 1) Preferred: seeker-scoped RPC that reads exact saved spot coordinates.
@@ -215,6 +217,30 @@ export default async function BookingConfirmationWebPage({ params }: Props) {
             />
           </dl>
         </GlassCard>
+
+        {/* ─── Owner contact (RPC: seeker + confirmed/active booking only) ─── */}
+        {ownerContact ? (
+          <GlassCard variant="elevated" className="mb-4 p-5" hover={false}>
+            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-txt-muted">
+              <Phone className="h-3.5 w-3.5 text-electric-bright" />
+              Spot owner
+            </h2>
+            <p className="text-sm font-semibold text-white">{ownerContact.full_name}</p>
+            {ownerContact.phone ? (
+              <a
+                href={`tel:${ownerContact.phone}`}
+                className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-electric-bright hover:underline"
+              >
+                {ownerContact.phone}
+              </a>
+            ) : (
+              <p className="mt-2 text-xs text-txt-muted">Phone not on file — use Message host in the app if available.</p>
+            )}
+            <p className="mt-3 text-2xs text-txt-disabled">
+              Contact details are shown once your booking is confirmed.
+            </p>
+          </GlassCard>
+        ) : null}
 
         {/* ─── Post-booking location map (seeker-visible only after booking) ─── */}
         <GlassCard variant="elevated" className="mb-4 overflow-hidden" hover={false}>
