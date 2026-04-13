@@ -43,6 +43,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Vercel secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN is not set. In GitHub: Settings → Secrets and variables → Actions → New repository secret. Create a token at https://vercel.com/account/tokens"
+            exit 1
+          fi
+          if [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::VERCEL_ORG_ID and VERCEL_PROJECT_ID must be set (from apps/web/.vercel/project.json after vercel link, or Vercel project settings)."
+            exit 1
+          fi
+
       - name: Pull Vercel environment info
         working-directory: apps/web
         env:
