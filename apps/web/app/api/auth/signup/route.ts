@@ -12,18 +12,10 @@
  *   • Mobile app before calling supabase.auth.signInWithPassword()
  */
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { signUpSchema } from "@parknear/shared";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const runtime = "nodejs";
-
-function adminDb() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -43,7 +35,19 @@ export async function POST(request: Request) {
   }
 
   const { email, password, full_name, phone } = parsed.data;
-  const db = adminDb();
+
+  let db;
+  try {
+    db = createServiceRoleClient();
+  } catch {
+    console.error(
+      "[signup] Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — add both in Vercel → Settings → Environment Variables, then redeploy."
+    );
+    return NextResponse.json(
+      { error: "Sign-up is temporarily unavailable. Please try again later." },
+      { status: 503 }
+    );
+  }
 
   // Guard: reject if email already exists
   const { data: existing } = await db
