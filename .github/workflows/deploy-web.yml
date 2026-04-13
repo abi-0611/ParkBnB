@@ -58,8 +58,8 @@ jobs:
             exit 1
           fi
 
+      # Run from repo root: Vercel project "Root Directory" is apps/web — if cwd is apps/web, the CLI doubles the path (apps/web/apps/web).
       - name: Pull Vercel environment info
-        working-directory: apps/web
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -74,7 +74,6 @@ jobs:
           fi
 
       - name: Build Vercel artifacts
-        working-directory: apps/web
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -82,7 +81,6 @@ jobs:
         run: pnpm dlx vercel build --token="$VERCEL_TOKEN"
 
       - name: Deploy prebuilt artifacts
-        working-directory: apps/web
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
