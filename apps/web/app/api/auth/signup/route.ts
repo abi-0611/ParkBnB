@@ -36,56 +36,76 @@ export async function POST(request: Request) {
 
   const { email, password, full_name, phone } = parsed.data;
 
-  let db;
   try {
-    db = createServiceRoleClient();
-  } catch {
-    console.error(
-      "[signup] Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — add both in Vercel → Settings → Environment Variables, then redeploy."
-    );
-    return NextResponse.json(
-      { error: "Sign-up is temporarily unavailable. Please try again later." },
-      { status: 503 }
-    );
-  }
+    let db;
+    try {
+      db = createServiceRoleClient();
+    } catch {
+      console.error(
+        "[signup] Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — add both in Vercel → Settings → Environment Variables, then redeploy."
+      );
+      return NextResponse.json(
+        { error: "Sign-up is temporarily unavailable. Please try again later." },
+        { status: 503 }
+      );
+    }
 
-  // Guard: reject if email already exists
-  const { data: existing } = await db
-    .from("users")
-    .select("id")
-    .eq("email", email.toLowerCase().trim())
-    .maybeSingle();
-
-  if (existing) {
-    return NextResponse.json(
-      { error: "An account with this email already exists." },
-      { status: 409 }
-    );
-  }
-
-  // Create the Supabase auth user (email_confirm: true = no confirmation email)
-  const { data, error } = await db.auth.admin.createUser({
-    email:         email.toLowerCase().trim(),
-    password,
-    email_confirm: true,
-    user_metadata: { full_name: full_name.trim() },
-  });
-
-  if (error) {
-    // Surface Supabase's own error message (e.g. "Password should be at least 6 characters")
-    return NextResponse.json({ error: error.message }, { status: 422 });
-  }
-
-  // Backfill full_name / phone in case the DB trigger didn't capture metadata
-  if (data?.user?.id) {
-    await db
+    // Guard: reject if email already exists
+    const { data: existing, error: existingErr } = await db
       .from("users")
-      .update({
-        full_name: full_name.trim(),
-        phone,
-      })
-      .eq("id", data.user.id);
-  }
+      .select("id")
+      .eq("email", email.toLowerCase().trim())
+      .maybeSingle();
 
-  return NextResponse.json({ ok: true });
+    if (existingErr) {
+      console.error("[signup] users lookup:", existingErr.message);
+      return NextResponse.json(
+        { error: "Could not verify email. Please try again." },
+        { status: 503 }
+      );
+    }
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "An account with this email already exists." },
+        { status: 409 }
+      );
+    }
+
+    // Create the Supabase auth user (email_confirm: true = no confirmation email)
+    const { data, error } = await db.auth.admin.createUser({
+      email:         email.toLowerCase().trim(),
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: full_name.trim() },
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 422 });
+    }
+
+    // Backfill full_name / phone in case the DB trigger didn't capture metadata
+    if (data?.user?.id) {
+      const { error: upErr } = await db
+        .from("users")
+        .update({
+          full_name: full_name.trim(),
+          phone,
+        })
+        .eq("id", data.user.id);
+
+      if (upErr) {
+        console.error("[signup] profile backfill:", upErr.message);
+        // Auth user exists; client can still sign in — don't fail the whole request
+      }
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[signup]", err);
+    return NextResponse.json(
+      { error: "Registration failed. Please try again later." },
+      { status: 500 }
+    );
+  }
 }

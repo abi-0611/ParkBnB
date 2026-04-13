@@ -317,11 +317,25 @@ export function LoginForm() {
         phone:           parsed.data.phone,
       }),
     });
-    const json = await res.json() as { ok?: boolean; error?: string };
+
+    const raw = await res.text();
+    let json: { ok?: boolean; error?: string } = {};
+    if (raw) {
+      try {
+        json = JSON.parse(raw) as { ok?: boolean; error?: string };
+      } catch {
+        json = {};
+      }
+    }
 
     if (!res.ok || !json.ok) {
       setPending(false);
-      setError(json.error ?? "Registration failed. Please try again.");
+      setError(
+        json.error ??
+          (res.status >= 500
+            ? `Server error (${res.status}). If this persists, check deployment env (e.g. SUPABASE_SERVICE_ROLE_KEY).`
+            : "Registration failed. Please try again.")
+      );
       return;
     }
 
